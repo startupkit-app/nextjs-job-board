@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useActionState, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Turnstile } from "@/components/turnstile";
-import type { ApplicationForm, FormField, Question } from "@/lib/kit-sdk-shim";
+import type { ApplicationForm, FormField, Question } from "@/lib/kit";
 import { submitApplication, type ApplyState, type FieldErrors } from "./actions";
 import { FileUpload } from "./resume-upload";
 

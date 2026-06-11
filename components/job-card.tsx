@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Salary } from "@/components/salary";
 import { formatDate, formatEmploymentType } from "@/lib/format";
-import type { Job } from "@/lib/kit-sdk-shim";
+import type { Job } from "@/lib/kit";
 
 export function JobCard({ job }: { job: Job }) {
   return (

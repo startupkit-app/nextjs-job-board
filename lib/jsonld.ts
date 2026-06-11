@@ -1,4 +1,4 @@
-import type { JobDetail } from "./kit-sdk-shim";
+import type { JobDetail } from "./kit";
 
 /** Maps Kit employment_type values to schema.org employmentType enum members. */
 const EMPLOYMENT_TYPES: Record<string, string> = {

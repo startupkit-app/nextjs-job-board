@@ -1,4 +1,4 @@
-import type { Salary as SalaryRange } from "@/lib/kit-sdk-shim";
+import type { Salary as SalaryRange } from "@/lib/kit";
 
 const PERIOD_LABELS: Record<string, string> = {
   hour: "hr",

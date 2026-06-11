@@ -1,16 +1,10 @@
 import "server-only";
 
-// ─── SDK import ───────────────────────────────────────────────────────────────
-// `@startupkit-app/jobs` is declared in package.json but not published to npm yet,
-// so the template ships with a local, API-compatible shim. Once the package is
-// available, swapping it in is a one-line change — replace the two lines below
-// with:
-//
-//   export * from "@startupkit-app/jobs";
-//   import { createClient } from "@startupkit-app/jobs";
-//
-export * from "./kit-sdk-shim";
-import { createClient } from "./kit-sdk-shim";
+// ─── SDK ──────────────────────────────────────────────────────────────────────
+// The single point where this template depends on the Kit SDK. Re-exported so the
+// rest of the app imports types + the client from `@/lib/kit`.
+export * from "@startupkit-app/jobs";
+import { createClient } from "@startupkit-app/jobs";
 
 /**
  * Server-side Kit client, authenticated with the SECRET key. The `server-only`
