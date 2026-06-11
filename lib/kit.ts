@@ -1,13 +1,13 @@
 import "server-only";
 
 // ─── SDK import ───────────────────────────────────────────────────────────────
-// `@startupkit/jobs` is declared in package.json but not published to npm yet,
+// `@startupkit-app/jobs` is declared in package.json but not published to npm yet,
 // so the template ships with a local, API-compatible shim. Once the package is
 // available, swapping it in is a one-line change — replace the two lines below
 // with:
 //
-//   export * from "@startupkit/jobs";
-//   import { createClient } from "@startupkit/jobs";
+//   export * from "@startupkit-app/jobs";
+//   import { createClient } from "@startupkit-app/jobs";
 //
 export * from "./kit-sdk-shim";
 import { createClient } from "./kit-sdk-shim";

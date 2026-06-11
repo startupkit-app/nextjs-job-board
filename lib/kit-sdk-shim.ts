@@ -1,17 +1,17 @@
 /**
- * Local, dependency-free shim for the `@startupkit/jobs` SDK.
+ * Local, dependency-free shim for the `@startupkit-app/jobs` SDK.
  *
  * The real package is declared in package.json (`optionalDependencies`) but is
  * not published yet, so this file mirrors the SDK's EXACT public surface (same
  * type names, same method names, same `Page<T>` shape) against Kit's public
- * hiring API. Once `@startupkit/jobs` ships, swapping it in is a one-line change
+ * hiring API. Once `@startupkit-app/jobs` ships, swapping it in is a one-line change
  * in `lib/kit.ts` — replace `export * from "./kit-sdk-shim"` with
- * `export * from "@startupkit/jobs"`. Nothing else changes.
+ * `export * from "@startupkit-app/jobs"`. Nothing else changes.
  *
  * API contract: https://startupkit.app/docs/public-jobs-api
  */
 
-// ─── Wire types (mirror @startupkit/jobs) ─────────────────────────────────────
+// ─── Wire types (mirror @startupkit-app/jobs) ─────────────────────────────────────
 
 export interface Pagination {
   current_page: number;

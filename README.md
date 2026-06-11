@@ -86,10 +86,10 @@ detail page is busted too.
 
 ## About the SDK shim (`lib/kit-sdk-shim.ts`)
 
-This template is written against the **`@startupkit/jobs`** SDK, which isn't published to npm
+This template is written against the **`@startupkit-app/jobs`** SDK, which isn't published to npm
 yet. Until it ships:
 
-- `package.json` declares `"@startupkit/jobs": "^0.1.0"` under **`optionalDependencies`**, so
+- `package.json` declares `"@startupkit-app/jobs": "^0.1.0"` under **`optionalDependencies`**, so
   `npm install` succeeds today and will automatically pick the real package up once published.
 - `lib/kit-sdk-shim.ts` is a small, dependency-free implementation of the same client surface
   (types + `createClient`) against the public HTTP API.
@@ -103,11 +103,11 @@ export * from "./kit-sdk-shim";
 import { createClient } from "./kit-sdk-shim";
 
 // after
-export * from "@startupkit/jobs";
-import { createClient } from "@startupkit/jobs";
+export * from "@startupkit-app/jobs";
+import { createClient } from "@startupkit-app/jobs";
 ```
 
-…optionally move `@startupkit/jobs` from `optionalDependencies` to `dependencies`, and delete
+…optionally move `@startupkit-app/jobs` from `optionalDependencies` to `dependencies`, and delete
 `lib/kit-sdk-shim.ts`. Nothing else changes.
 
 ## API surface used
