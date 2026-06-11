@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  @apply bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+}
+
+/* Rich-text styles for API-provided HTML (job descriptions, consent text). */
+.job-description {
+  @apply text-[0.95rem] leading-7 text-zinc-700 dark:text-zinc-300;
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply mt-8 mb-3 font-semibold text-zinc-900 dark:text-zinc-100;
+  }
+
+  h1 {
+    @apply text-xl;
+  }
+
+  h2 {
+    @apply text-lg;
+  }
+
+  h3,
+  h4 {
+    @apply text-base;
+  }
+
+  p {
+    @apply my-4;
+  }
+
+  ul,
+  ol {
+    @apply my-4 space-y-1.5 pl-6;
+  }
+
+  ul {
+    @apply list-disc;
+  }
+
+  ol {
+    @apply list-decimal;
+  }
+
+  a {
+    @apply font-medium text-indigo-600 underline underline-offset-2 hover:text-indigo-500 dark:text-indigo-400;
+  }
+
+  strong,
+  b {
+    @apply font-semibold text-zinc-900 dark:text-zinc-100;
+  }
+
+  blockquote {
+    @apply my-4 border-l-4 border-zinc-200 pl-4 italic dark:border-zinc-700;
+  }
+
+  code {
+    @apply rounded bg-zinc-100 px-1 py-0.5 font-mono text-[0.85em] dark:bg-zinc-800;
+  }
+
+  hr {
+    @apply my-8 border-zinc-200 dark:border-zinc-800;
+  }
+
+  > :first-child {
+    @apply mt-0;
+  }
+
+  > :last-child {
+    @apply mb-0;
+  }
+}
