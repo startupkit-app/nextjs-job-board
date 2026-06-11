@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { JobCard } from "@/components/job-card";
 import { JobFilters } from "@/components/job-filters";
-import { kit, kitConfigured, type Job, type JobsResponse } from "@/lib/kit";
+import { kit, kitConfigured, type Job, type Pagination as PaginationData } from "@/lib/kit";
 
 const PER_PAGE = 20;
 
@@ -109,7 +109,7 @@ function Pagination({
   pagination,
   searchParams,
 }: {
-  pagination: JobsResponse["pagination"];
+  pagination: PaginationData;
   searchParams: Record<string, string | string[] | undefined>;
 }) {
   if (pagination.total_pages <= 1) return null;

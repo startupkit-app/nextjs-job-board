@@ -47,6 +47,18 @@ export function formatSalaryRange(salary: SalaryRange): string | null {
   }
 
   const period = PERIOD_LABELS[salary.period] ?? salary.period;
-  const range = salary.min === salary.max ? format(salary.min) : `${format(salary.min)} – ${format(salary.max)}`;
+  const { min, max } = salary;
+
+  let range: string;
+  if (min != null && max != null) {
+    range = min === max ? format(min) : `${format(min)} – ${format(max)}`;
+  } else if (min != null) {
+    range = `From ${format(min)}`;
+  } else if (max != null) {
+    range = `Up to ${format(max)}`;
+  } else {
+    return null; // salary block with no numeric bounds
+  }
+
   return `${range} / ${period}`;
 }

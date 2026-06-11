@@ -49,9 +49,12 @@ export function ApplyForm({
   const coreFields = CORE_FIELD_NAMES.map(
     (name) => form.fields.find((field) => field.name === name) ?? DEFAULT_CORE_FIELDS[name]
   );
-  const extraFields = form.fields.filter(
-    (field) => !CORE_FIELD_NAMES.includes(field.name as (typeof CORE_FIELD_NAMES)[number])
-  );
+  // "resume" is rendered by the dedicated uploader below (submitted as
+  // resume_signed_id), so keep it out of the generic "extra fields" list to
+  // avoid a duplicate uploader that the API would silently ignore.
+  const reservedNames = [...CORE_FIELD_NAMES, "resume"];
+  const resumeField = form.fields.find((field) => field.name === "resume");
+  const extraFields = form.fields.filter((field) => !reservedNames.includes(field.name));
 
   const turnstileSitekey = form.turnstile.sitekey || process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || null;
 
@@ -84,6 +87,7 @@ export function ApplyForm({
       <FileUpload
         name="resume_signed_id"
         label="Resume / CV"
+        required={resumeField?.required ?? false}
         contentTypes={form.resume.content_types}
         maxByteSize={form.resume.max_byte_size}
         serverError={errors.resume ?? errors.resume_signed_id}
@@ -125,6 +129,7 @@ export function ApplyForm({
       {form.consent_disclosure_html && (
         <div
           className="job-description rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-xs dark:border-zinc-800 dark:bg-zinc-900"
+          // Server-sanitized at the data boundary (lib/sanitize.ts) before this prop is passed in.
           dangerouslySetInnerHTML={{ __html: form.consent_disclosure_html }}
         />
       )}

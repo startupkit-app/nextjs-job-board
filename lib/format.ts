@@ -22,7 +22,8 @@ export function formatEmploymentType(value: string | null | undefined): string |
   return EMPLOYMENT_TYPE_LABELS[value] ?? humanize(value);
 }
 
-export function formatDate(iso: string): string {
+export function formatDate(iso: string | null | undefined): string {
+  if (!iso) return "";
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
   return new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(date);

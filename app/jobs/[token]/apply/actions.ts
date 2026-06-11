@@ -1,7 +1,7 @@
 "use server";
 
 import { fetchJob } from "@/lib/jobs";
-import { kit, KitApiError, type DirectUploadMeta } from "@/lib/kit";
+import { kit, KitApiError, type UploadMeta } from "@/lib/kit";
 
 // ─── Types shared with the client form (type-only — erased at runtime) ───────
 
@@ -53,6 +53,7 @@ export async function submitApplication(
 
   for (const field of form.fields) {
     if (CORE_FIELDS.has(field.name)) continue;
+    if (field.name === "resume") continue; // handled via resume_signed_id below
 
     if (field.type === "file") {
       const signedId = value(`file:${field.name}`);
@@ -86,6 +87,12 @@ export async function submitApplication(
   const phoneField = form.fields.find((field) => field.name === "phone");
   if (phoneField?.required && !phone) fieldErrors.phone = "Phone number is required.";
 
+  // Resume travels as a signed_id from the dedicated uploader, not as a generic
+  // file field — enforce its required flag here.
+  const resumeSignedId = value("resume_signed_id");
+  const resumeField = form.fields.find((field) => field.name === "resume");
+  if (resumeField?.required && !resumeSignedId) fieldErrors.resume = "Resume is required.";
+
   if (Object.keys(fieldErrors).length > 0) {
     return {
       status: "error",
@@ -94,11 +101,18 @@ export async function submitApplication(
     };
   }
 
-  const resumeSignedId = value("resume_signed_id");
+  // When the employer's key has Turnstile configured the form must carry a token;
+  // the API verifies the forwarded token even on the secret-key server path.
   const turnstileToken = value("turnstile_token");
+  if (form.turnstile.required && !turnstileToken) {
+    return {
+      status: "error",
+      message: "Please complete the spam-protection verification before submitting.",
+    };
+  }
 
   try {
-    const result = await kit.submitApplication(
+    const result = await kit.apply(
       token,
       {
         email,
@@ -109,7 +123,7 @@ export async function submitApplication(
         resume_signed_id: resumeSignedId || undefined,
         files: Object.keys(files).length > 0 ? files : undefined,
       },
-      turnstileToken || undefined
+      { turnstileToken: turnstileToken || undefined }
     );
 
     return { status: "success", applicationId: result.id, submittedAt: result.submitted_at };
@@ -148,13 +162,13 @@ export async function submitApplication(
  * browser then PUTs the file straight to storage — bypassing Vercel's ~4.5 MB
  * request body limit — and submits the returned signed_id with the form.
  */
-export async function createResumeUpload(meta: DirectUploadMeta): Promise<PresignResult> {
+export async function createResumeUpload(meta: UploadMeta): Promise<PresignResult> {
   if (!meta?.filename || !meta.byte_size || !meta.checksum || !meta.content_type) {
     return { ok: false, error: "Incomplete file metadata." };
   }
 
   try {
-    const { signed_id, direct_upload } = await kit.createDirectUpload(meta);
+    const { signed_id, direct_upload } = await kit.createUpload(meta);
     return { ok: true, signedId: signed_id, url: direct_upload.url, headers: direct_upload.headers };
   } catch (error) {
     if (error instanceof KitApiError) {

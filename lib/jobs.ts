@@ -1,4 +1,5 @@
 import { kit, KitApiError, type JobDetail } from "./kit";
+import { sanitizeRichHtml, sanitizeConsentHtml } from "./sanitize";
 
 export const JOB_DETAIL_REVALIDATE = 300;
 
@@ -13,11 +14,27 @@ export function jobTags(token: string): string[] {
  */
 export async function fetchJob(token: string): Promise<JobDetail | null> {
   try {
-    return await kit.getJob(token, {
+    const job = await kit.getJob(token, {
       next: { revalidate: JOB_DETAIL_REVALIDATE, tags: jobTags(token) },
     });
+    return sanitizeJob(job);
   } catch (error) {
     if (error instanceof KitApiError && error.status === 404) return null;
     throw error;
   }
+}
+
+/**
+ * Sanitizes the API's raw-HTML fields at the data boundary so no render site
+ * (including client components) ever receives untrusted HTML. See ./sanitize.
+ */
+function sanitizeJob(job: JobDetail): JobDetail {
+  return {
+    ...job,
+    description_html: sanitizeRichHtml(job.description_html),
+    application_form: {
+      ...job.application_form,
+      consent_disclosure_html: sanitizeConsentHtml(job.application_form.consent_disclosure_html),
+    },
+  };
 }

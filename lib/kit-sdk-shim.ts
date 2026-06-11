@@ -2,20 +2,29 @@
  * Local, dependency-free shim for the `@startupkit/jobs` SDK.
  *
  * The real package is declared in package.json (`optionalDependencies`) but is
- * not published yet, so this file implements the same public surface against
- * Kit's public hiring API (https://startupkit.app). Once `@startupkit/jobs`
- * ships, swap the import in `lib/kit.ts` — nothing else needs to change.
+ * not published yet, so this file mirrors the SDK's EXACT public surface (same
+ * type names, same method names, same `Page<T>` shape) against Kit's public
+ * hiring API. Once `@startupkit/jobs` ships, swapping it in is a one-line change
+ * in `lib/kit.ts` — replace `export * from "./kit-sdk-shim"` with
+ * `export * from "@startupkit/jobs"`. Nothing else changes.
  *
  * API contract: https://startupkit.app/docs/public-jobs-api
  */
 
-// ─── Resources ────────────────────────────────────────────────────────────────
+// ─── Wire types (mirror @startupkit/jobs) ─────────────────────────────────────
+
+export interface Pagination {
+  current_page: number;
+  total_pages: number;
+  total_count: number;
+  per_page: number;
+}
 
 export interface Salary {
-  min: number;
-  max: number;
+  // The API emits the salary block when EITHER bound is present, so either may be null.
+  min: number | null;
+  max: number | null;
   currency: string;
-  /** e.g. "year" | "month" | "hour" */
   period: string;
 }
 
@@ -27,10 +36,9 @@ export interface Job {
   location: string | null;
   employment_type: string | null;
   remote: boolean;
-  published_at: string;
-  /** Canonical URL of the posting on the Kit-hosted career portal. */
-  url: string;
-  salary?: Salary | null;
+  published_at: string | null;
+  url: string | null;
+  salary?: Salary;
 }
 
 export type FormFieldType =
@@ -64,42 +72,34 @@ export interface Question {
   options?: string[];
 }
 
-export interface JobStage {
+export interface Stage {
   name: string;
   type: string;
+}
+
+export interface ResumeRequirements {
+  content_types: string[];
+  max_byte_size: number;
+}
+
+export interface TurnstileConfig {
+  required: boolean;
+  sitekey: string | null;
 }
 
 export interface ApplicationForm {
   fields: FormField[];
   questions: Question[];
-  consent_disclosure_html: string | null;
-  resume: {
-    content_types: string[];
-    max_byte_size: number;
-  };
-  turnstile: {
-    required: boolean;
-    sitekey: string | null;
-  };
+  consent_disclosure_html: string;
+  resume: ResumeRequirements;
+  turnstile: TurnstileConfig;
 }
 
 export interface JobDetail extends Job {
   description_html: string;
   accepting_applications: boolean;
-  stages: JobStage[];
+  stages: Stage[];
   application_form: ApplicationForm;
-}
-
-export interface Pagination {
-  current_page: number;
-  total_pages: number;
-  total_count: number;
-  per_page: number;
-}
-
-export interface JobsResponse {
-  data: Job[];
-  pagination: Pagination;
 }
 
 export interface ListJobsParams {
@@ -111,217 +111,228 @@ export interface ListJobsParams {
   per_page?: number;
 }
 
-export interface DirectUploadMeta {
+export interface Page<T> {
+  data: T[];
+  pagination: Pagination;
+  hasNextPage: boolean;
+  /** Fetches the next page, or returns `null` on the last page. */
+  nextPage(): Promise<Page<T>> | null;
+}
+
+export interface UploadMeta {
   filename: string;
   byte_size: number;
-  /** Base64-encoded MD5 digest of the file contents. */
+  /** Base64-encoded MD5 digest of the file's bytes. */
   checksum: string;
   content_type: string;
 }
 
-export interface DirectUploadResponse {
+export interface UploadTicket {
   signed_id: string;
+  filename: string;
+  content_type: string;
+  byte_size: number;
   direct_upload: {
     url: string;
     headers: Record<string, string>;
   };
 }
 
-export interface ApplicationPayload {
+export interface ApplicationInput {
   email: string;
-  first_name: string;
-  last_name: string;
+  first_name?: string;
+  last_name?: string;
   phone?: string;
   /** Keyed by form field name / question key. */
-  responses: Record<string, string>;
+  responses?: Record<string, string>;
   resume_signed_id?: string;
   /** File-type form fields: field name → direct-upload signed_id. */
   files?: Record<string, string>;
 }
 
-export interface ApplicationResponse {
+export interface ApplicationResult {
   id: string;
   status: "submitted";
-  job: Job;
+  /** Public token of the job that was applied to. */
+  job: string;
   submitted_at: string;
+}
+
+export interface ErrorEnvelope {
+  error: {
+    code: string;
+    message: string;
+    fields?: Record<string, string[]>;
+  };
 }
 
 // ─── Errors ───────────────────────────────────────────────────────────────────
 
-export type KitErrorCode =
-  | "already_applied"
-  | "validation_failed"
-  | "turnstile_failed"
-  // The API may introduce further codes; treat unknown codes generically.
-  | (string & {});
-
 export class KitApiError extends Error {
-  readonly code: KitErrorCode;
+  readonly code: string;
   readonly status: number;
-  readonly fields?: Record<string, string | string[]>;
+  readonly fields?: Record<string, string[]>;
 
-  constructor(
-    status: number,
-    code: KitErrorCode,
-    message: string,
-    fields?: Record<string, string | string[]>
-  ) {
-    super(message);
+  constructor(args: { status: number; code: string; message: string; fields?: Record<string, string[]> }) {
+    super(args.message);
     this.name = "KitApiError";
-    this.status = status;
-    this.code = code;
-    this.fields = fields;
+    this.status = args.status;
+    this.code = args.code;
+    this.fields = args.fields;
+  }
+}
+
+export class KitNetworkError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = "KitNetworkError";
   }
 }
 
 // ─── Client ───────────────────────────────────────────────────────────────────
 
-/**
- * Per-request options forwarded to `fetch`. `next.revalidate` / `next.tags`
- * integrate with the Next.js data cache (ISR + on-demand revalidation).
- */
 export interface RequestOptions {
   cache?: RequestCache;
   next?: { revalidate?: number | false; tags?: string[] };
   signal?: AbortSignal;
 }
 
-export interface KitClientConfig {
-  /** Secret API key (sk_…). Server-side only — never ship it to the browser. */
+export interface ClientOptions {
+  /** Publishable key (`pk_…`) — browser-safe. */
+  publishableKey?: string;
+  /** Secret key (`sk_…`) — server-side only. */
   secretKey?: string;
   /** Defaults to https://app.startupkit.app */
   baseUrl?: string;
 }
 
-export interface KitClient {
-  listJobs(params?: ListJobsParams, options?: RequestOptions): Promise<JobsResponse>;
+export interface KitJobsClient {
+  listJobs(params?: ListJobsParams, options?: RequestOptions): Promise<Page<Job>>;
   getJob(publicToken: string, options?: RequestOptions): Promise<JobDetail>;
-  createDirectUpload(meta: DirectUploadMeta, options?: RequestOptions): Promise<DirectUploadResponse>;
-  submitApplication(
+  createUpload(meta: UploadMeta, options?: RequestOptions): Promise<UploadTicket>;
+  apply(
     publicToken: string,
-    application: ApplicationPayload,
-    turnstileToken?: string,
-    options?: RequestOptions
-  ): Promise<ApplicationResponse>;
+    input: ApplicationInput,
+    opts?: { turnstileToken?: string }
+  ): Promise<ApplicationResult>;
 }
 
-interface KitRequestInit extends RequestInit {
-  next?: RequestOptions["next"];
+export const DEFAULT_BASE_URL = "https://app.startupkit.app";
+
+interface RawPage {
+  data: Job[];
+  pagination: Pagination;
 }
 
-const DEFAULT_BASE_URL = "https://app.startupkit.app";
-
-export function createClient(config: KitClientConfig = {}): KitClient {
+export function createClient(config: ClientOptions = {}): KitJobsClient {
+  const apiKey = config.secretKey ?? config.publishableKey;
   const baseUrl = (config.baseUrl || DEFAULT_BASE_URL).replace(/\/+$/, "");
-
-  function authorization(): string {
-    if (!config.secretKey) {
-      throw new Error(
-        "Kit API key is missing. Set STARTUPKIT_SECRET_KEY (Kit → Hiring → Career Portal → Public API Keys)."
-      );
-    }
-    return `Bearer ${config.secretKey}`;
-  }
 
   async function request<T>(
     method: "GET" | "POST",
     path: string,
-    {
-      query,
-      body,
-      options,
-    }: {
+    init: {
       query?: Record<string, string | number | boolean | undefined>;
       body?: unknown;
       options?: RequestOptions;
     } = {}
   ): Promise<T> {
+    if (!apiKey) {
+      throw new Error(
+        "Kit API key is missing. Set STARTUPKIT_SECRET_KEY (Kit → Hiring → Career Portal → Public API Keys)."
+      );
+    }
+
     const url = new URL(`${baseUrl}/api/public/v1${path}`);
-    if (query) {
-      for (const [key, value] of Object.entries(query)) {
+    if (init.query) {
+      for (const [key, value] of Object.entries(init.query)) {
         if (value !== undefined && value !== null && value !== "") {
           url.searchParams.set(key, String(value));
         }
       }
     }
 
-    const init: KitRequestInit = {
+    const fetchInit: RequestInit & { next?: RequestOptions["next"] } = {
       method,
       headers: {
-        Authorization: authorization(),
+        Authorization: `Bearer ${apiKey}`,
         Accept: "application/json",
-        ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+        ...(init.body !== undefined ? { "Content-Type": "application/json" } : {}),
       },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-      cache: options?.cache,
-      next: options?.next,
-      signal: options?.signal,
+      body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
+      cache: init.options?.cache,
+      next: init.options?.next,
+      signal: init.options?.signal,
     };
 
-    const response = await fetch(url, init);
+    let response: Response;
+    try {
+      response = await fetch(url, fetchInit);
+    } catch (cause) {
+      throw new KitNetworkError(`Request to ${url} failed`, { cause });
+    }
     if (!response.ok) throw await toApiError(response);
     return (await response.json()) as T;
   }
 
+  function buildPage(raw: RawPage, params: ListJobsParams, options?: RequestOptions): Page<Job> {
+    const { current_page, total_pages } = raw.pagination;
+    const hasNextPage = current_page < total_pages;
+    return {
+      data: raw.data,
+      pagination: raw.pagination,
+      hasNextPage,
+      nextPage: () => (hasNextPage ? listJobs({ ...params, page: current_page + 1 }, options) : null),
+    };
+  }
+
+  async function listJobs(params: ListJobsParams = {}, options?: RequestOptions): Promise<Page<Job>> {
+    const raw = await request<RawPage>("GET", "/jobs", { query: { ...params }, options });
+    return buildPage(raw, params, options);
+  }
+
   return {
-    listJobs(params = {}, options) {
-      return request<JobsResponse>("GET", "/jobs", {
-        query: {
-          department: params.department,
-          location: params.location,
-          employment_type: params.employment_type,
-          remote: params.remote,
-          page: params.page,
-          per_page: params.per_page,
-        },
-        options,
-      });
-    },
+    listJobs,
 
     getJob(publicToken, options) {
       return request<JobDetail>("GET", `/jobs/${encodeURIComponent(publicToken)}`, { options });
     },
 
-    createDirectUpload(meta, options) {
-      return request<DirectUploadResponse>("POST", "/direct_uploads", {
+    createUpload(meta, options) {
+      return request<UploadTicket>("POST", "/direct_uploads", {
         body: { blob: meta },
         options: { cache: "no-store", ...options },
       });
     },
 
-    submitApplication(publicToken, application, turnstileToken, options) {
-      return request<ApplicationResponse>(
-        "POST",
-        `/jobs/${encodeURIComponent(publicToken)}/applications`,
-        {
-          body: {
-            application,
-            ...(turnstileToken ? { turnstile_token: turnstileToken } : {}),
-          },
-          options: { cache: "no-store", ...options },
-        }
-      );
+    apply(publicToken, input, opts) {
+      return request<ApplicationResult>("POST", `/jobs/${encodeURIComponent(publicToken)}/applications`, {
+        body: {
+          application: input,
+          ...(opts?.turnstileToken ? { turnstile_token: opts.turnstileToken } : {}),
+        },
+        options: { cache: "no-store" },
+      });
     },
   };
 }
 
 async function toApiError(response: Response): Promise<KitApiError> {
-  let code: KitErrorCode = "request_failed";
+  let code = "request_failed";
   let message = `Kit API request failed with status ${response.status}.`;
-  let fields: Record<string, string | string[]> | undefined;
+  let fields: Record<string, string[]> | undefined;
 
   try {
-    const payload = (await response.json()) as {
-      error?: { code?: string; message?: string; fields?: Record<string, string | string[]> };
-    };
-    if (payload?.error) {
-      code = payload.error.code ?? code;
-      message = payload.error.message ?? message;
-      fields = payload.error.fields;
+    const payload = (await response.json()) as Partial<ErrorEnvelope> | null;
+    const error = payload?.error;
+    if (error && typeof error === "object") {
+      if (typeof error.code === "string") code = error.code;
+      if (typeof error.message === "string") message = error.message;
+      if (error.fields && typeof error.fields === "object") fields = error.fields;
     }
   } catch {
     // Non-JSON error body — keep the generic message.
   }
 
-  return new KitApiError(response.status, code, message, fields);
+  return new KitApiError({ status: response.status, code, message, fields });
 }

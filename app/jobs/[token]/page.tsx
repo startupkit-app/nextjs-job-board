@@ -90,7 +90,7 @@ export default async function JobPage({ params }: { params: Params }) {
 
       <div
         className="job-description"
-        // Trusted content: rendered from your own Kit account's job description.
+        // Server-sanitized at the data boundary (lib/sanitize.ts) before render.
         dangerouslySetInnerHTML={{ __html: job.description_html }}
       />
 

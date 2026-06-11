@@ -65,16 +65,19 @@ export function jobPostingJsonLd(job: JobDetail): Record<string, unknown> {
     };
   }
 
-  if (job.salary) {
+  if (job.salary && (job.salary.min != null || job.salary.max != null)) {
+    const value: Record<string, unknown> = {
+      "@type": "QuantitativeValue",
+      unitText: SALARY_UNITS[job.salary.period] ?? job.salary.period.toUpperCase(),
+    };
+    // Omit null bounds — Google for Jobs warns on null min/maxValue.
+    if (job.salary.min != null) value.minValue = job.salary.min;
+    if (job.salary.max != null) value.maxValue = job.salary.max;
+
     jsonLd.baseSalary = {
       "@type": "MonetaryAmount",
       currency: job.salary.currency,
-      value: {
-        "@type": "QuantitativeValue",
-        minValue: job.salary.min,
-        maxValue: job.salary.max,
-        unitText: SALARY_UNITS[job.salary.period] ?? job.salary.period.toUpperCase(),
-      },
+      value,
     };
   }
 
