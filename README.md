@@ -5,7 +5,9 @@ Fork it, set one environment variable, and you have a fast, SEO-friendly job boa
 fully dynamic application form — resume uploads, custom questions, Turnstile spam protection,
 and instant cache busting via webhooks.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/startupkit-app/nextjs-job-board&env=STARTUPKIT_SECRET_KEY&envDescription=Secret%20API%20key%20from%20Kit%20Settings&envLink=https://startupkit.app/docs/public-jobs-api)
+**▶ Live demo: [nextjs-job-board-orcin.vercel.app](https://nextjs-job-board-orcin.vercel.app)** — this template deployed against real Kit job data.
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/startupkit-app/nextjs-job-board&env=STARTUPKIT_SECRET_KEY&envDescription=Secret%20API%20key%20from%20Kit%20Settings&envLink=https://startupkit.app/docs/public-jobs-api&demo-title=Kit%20Job%20Board&demo-description=A%20careers%20site%20on%20the%20Kit%20public%20hiring%20API&demo-url=https://nextjs-job-board-orcin.vercel.app)
 
 ## Features
 
