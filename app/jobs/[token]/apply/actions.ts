@@ -1,7 +1,19 @@
 "use server";
 
 import { fetchJob } from "@/lib/jobs";
+import { isResumeRequired } from "@/lib/kit-compat";
 import { kit, KitApiError, type UploadMeta } from "@/lib/kit";
+
+/**
+ * The Kit API rate-limits applications and upload presigns per client IP. This
+ * template submits through a Server Action, so every applicant reaches the API
+ * from the same server egress IP and they all share one bucket. That makes 429
+ * a realistic response on a busy careers page rather than an edge case, so it
+ * gets a message that tells the applicant what to do instead of reading as a
+ * generic failure.
+ */
+const RATE_LIMITED_MESSAGE =
+  "We're receiving a lot of applications right now. Please wait a few minutes and try again — your answers will still be here.";
 
 // ─── Types shared with the client form (type-only — erased at runtime) ───────
 
@@ -90,8 +102,7 @@ export async function submitApplication(
   // Resume travels as a signed_id from the dedicated uploader, not as a generic
   // file field — enforce its required flag here.
   const resumeSignedId = value("resume_signed_id");
-  const resumeField = form.fields.find((field) => field.name === "resume");
-  if (resumeField?.required && !resumeSignedId) fieldErrors.resume = "Resume is required.";
+  if (isResumeRequired(form) && !resumeSignedId) fieldErrors.resume = "Resume is required.";
 
   if (Object.keys(fieldErrors).length > 0) {
     return {
@@ -129,6 +140,9 @@ export async function submitApplication(
     return { status: "success", applicationId: result.id, submittedAt: result.submitted_at };
   } catch (error) {
     if (error instanceof KitApiError) {
+      if (error.status === 429) {
+        return { status: "error", message: RATE_LIMITED_MESSAGE };
+      }
       if (error.code === "already_applied") {
         return {
           status: "error",
@@ -172,6 +186,9 @@ export async function createResumeUpload(meta: UploadMeta): Promise<PresignResul
     return { ok: true, signedId: signed_id, url: direct_upload.url, headers: direct_upload.headers };
   } catch (error) {
     if (error instanceof KitApiError) {
+      if (error.status === 429) {
+        return { ok: false, error: RATE_LIMITED_MESSAGE };
+      }
       return { ok: false, error: error.message };
     }
     console.error("Direct upload presign failed:", error);

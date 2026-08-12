@@ -56,7 +56,7 @@ npm run dev
 | `STARTUPKIT_SECRET_KEY`          | **Yes**  | Secret API key (`sk_…`) from Kit → Hiring → Career Portal → Public API Keys |
 | `STARTUPKIT_BASE_URL`            | No       | API base URL. Defaults to `https://app.startupkit.app`                      |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | No       | Cloudflare Turnstile site key — renders the widget on the apply form        |
-| `REVALIDATE_SECRET`              | No       | Shared secret enabling the `POST /api/revalidate` webhook endpoint          |
+| `KIT_WEBHOOK_SIGNING_SECRET`     | No       | Signing secret of the Kit webhook endpoint targeting `POST /api/revalidate` |
 | `NEXT_PUBLIC_COMPANY_NAME`       | No       | Company name for the header, titles, and JobPosting structured data         |
 
 ## How freshness works (ISR + webhooks)
@@ -67,50 +67,45 @@ All API reads go through Next.js' data cache:
 - Job detail / apply form: `revalidate: 300`, tagged `jobs` and `job-<token>`
 
 So the site is never more than a minute or two stale, with zero configuration. For **instant**
-updates, set `REVALIDATE_SECRET` and point a Kit webhook at the revalidation endpoint:
+updates, create a webhook endpoint in Kit (Integrations → Webhooks) pointing at:
 
 ```
 POST https://your-site.example/api/revalidate
-Authorization: Bearer <REVALIDATE_SECRET>
-Content-Type: application/json
-
-{ "event": "job_posting.published", "data": { "job": { "id": "<public_token>" } } }
 ```
 
-Useful Kit webhook events:
+and set `KIT_WEBHOOK_SIGNING_SECRET` to that endpoint's signing secret.
 
-- `job_posting.published` — a new role went live (busts the `jobs` list and the job's page)
-- `application.submitted` — useful if roles auto-close at an application cap, so
-  `accepting_applications` flips without waiting for ISR
+Kit authenticates deliveries by **signature**, not by a shared bearer token — it sends
+`X-Webhook-Signature` (HMAC-SHA256 of `<timestamp>.<body>`, hex) alongside `X-Webhook-Timestamp`
+and `X-Webhook-Event`, and cannot attach a custom `Authorization` header. The route recomputes
+the HMAC over the raw request body and rejects anything that does not match, or whose timestamp
+is more than 5 minutes old.
 
-Any authenticated call busts the `jobs` tag; if the payload contains a job id, that job's
-detail page is busted too.
+Subscribe to the job lifecycle events:
 
-## About the SDK shim (`lib/kit-sdk-shim.ts`)
+- `job_posting.published` / `job_posting.reopened` — the role becomes visible on the public API
+- `job_posting.paused` / `job_posting.closed` — the role starts returning 404
 
-This template is written against the **`@startupkit-app/jobs`** SDK, which isn't published to npm
-yet. Until it ships:
+All four bust both the `jobs` list tag and that job's `job-<token>` tag. Pausing and closing
+matter as much as publishing: without them a cached page keeps advertising a role that is no
+longer open. `application.*` events refresh just the job they belong to, which is useful if
+roles auto-close at an application cap.
 
-- `package.json` declares `"@startupkit-app/jobs": "^0.1.0"` under **`optionalDependencies`**, so
-  `npm install` succeeds today and will automatically pick the real package up once published.
-- `lib/kit-sdk-shim.ts` is a small, dependency-free implementation of the same client surface
-  (types + `createClient`) against the public HTTP API.
-- **Everything imports through `lib/kit.ts`**, which re-exports the shim.
+Two things webhooks do **not** cover, so the ISR window still earns its keep: Kit emits no
+`job_posting.updated` event, so edits to a job's title or description are not pushed; and
+reverting a job to draft fires no event at all even though it removes the job from the API.
 
-To swap in the real package later, edit the two marked lines in [`lib/kit.ts`](lib/kit.ts):
+## About the SDK
 
-```ts
-// before
-export * from "./kit-sdk-shim";
-import { createClient } from "./kit-sdk-shim";
+This template talks to Kit through the published **[`@startupkit-app/jobs`](https://www.npmjs.com/package/@startupkit-app/jobs)**
+package. [`lib/kit.ts`](lib/kit.ts) is the single place that imports it: it re-exports the types
+and exposes a `kit` client authenticated with the secret key. That module is marked `server-only`,
+so the key can never be bundled into a client component.
 
-// after
-export * from "@startupkit-app/jobs";
-import { createClient } from "@startupkit-app/jobs";
-```
-
-…optionally move `@startupkit-app/jobs` from `optionalDependencies` to `dependencies`, and delete
-`lib/kit-sdk-shim.ts`. Nothing else changes.
+[`lib/kit-compat.ts`](lib/kit-compat.ts) is a small companion holding shims for fields the API
+already returns but the pinned SDK version does not yet declare in its types. It imports only
+types from `lib/kit.ts`, which are erased at compile time, so it stays safe to use from client
+components. It should shrink to nothing as the SDK catches up.
 
 ## API surface used
 
