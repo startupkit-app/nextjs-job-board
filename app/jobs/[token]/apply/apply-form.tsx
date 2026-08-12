@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Turnstile } from "@/components/turnstile";
+import { isResumeRequired } from "@/lib/kit-compat";
 import type { ApplicationForm, FormField, Question } from "@/lib/kit";
 import { submitApplication, type ApplyState, type FieldErrors } from "./actions";
 import { FileUpload } from "./resume-upload";
@@ -53,7 +54,6 @@ export function ApplyForm({
   // resume_signed_id), so keep it out of the generic "extra fields" list to
   // avoid a duplicate uploader that the API would silently ignore.
   const reservedNames = [...CORE_FIELD_NAMES, "resume"];
-  const resumeField = form.fields.find((field) => field.name === "resume");
   const extraFields = form.fields.filter((field) => !reservedNames.includes(field.name));
 
   const turnstileSitekey = form.turnstile.sitekey || process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || null;
@@ -87,7 +87,7 @@ export function ApplyForm({
       <FileUpload
         name="resume_signed_id"
         label="Resume / CV"
-        required={resumeField?.required ?? false}
+        required={isResumeRequired(form)}
         contentTypes={form.resume.content_types}
         maxByteSize={form.resume.max_byte_size}
         serverError={errors.resume ?? errors.resume_signed_id}
