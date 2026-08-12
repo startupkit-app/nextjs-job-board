@@ -1,7 +1,6 @@
 "use server";
 
 import { fetchJob } from "@/lib/jobs";
-import { isResumeRequired } from "@/lib/kit-compat";
 import { kit, KitApiError, type UploadMeta } from "@/lib/kit";
 
 /**
@@ -102,7 +101,7 @@ export async function submitApplication(
   // Resume travels as a signed_id from the dedicated uploader, not as a generic
   // file field — enforce its required flag here.
   const resumeSignedId = value("resume_signed_id");
-  if (isResumeRequired(form) && !resumeSignedId) fieldErrors.resume = "Resume is required.";
+  if (form.resume.required && !resumeSignedId) fieldErrors.resume = "Resume is required.";
 
   if (Object.keys(fieldErrors).length > 0) {
     return {
