@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useActionState, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Turnstile } from "@/components/turnstile";
-import { isResumeRequired } from "@/lib/kit-compat";
 import type { ApplicationForm, FormField, Question } from "@/lib/kit";
 import { submitApplication, type ApplyState, type FieldErrors } from "./actions";
 import { FileUpload } from "./resume-upload";
@@ -87,7 +86,7 @@ export function ApplyForm({
       <FileUpload
         name="resume_signed_id"
         label="Resume / CV"
-        required={isResumeRequired(form)}
+        required={form.resume.required}
         contentTypes={form.resume.content_types}
         maxByteSize={form.resume.max_byte_size}
         serverError={errors.resume ?? errors.resume_signed_id}

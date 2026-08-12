@@ -102,10 +102,9 @@ package. [`lib/kit.ts`](lib/kit.ts) is the single place that imports it: it re-e
 and exposes a `kit` client authenticated with the secret key. That module is marked `server-only`,
 so the key can never be bundled into a client component.
 
-[`lib/kit-compat.ts`](lib/kit-compat.ts) is a small companion holding shims for fields the API
-already returns but the pinned SDK version does not yet declare in its types. It imports only
-types from `lib/kit.ts`, which are erased at compile time, so it stays safe to use from client
-components. It should shrink to nothing as the SDK catches up.
+The dependency is pinned as `^0.2.0`. A caret on a `0.x` version does not cross minor releases,
+so picking up a new SDK minor is always a deliberate edit here rather than something `npm install`
+does on its own — worth knowing when the API grows a field the template wants to read.
 
 ## API surface used
 
@@ -141,10 +140,10 @@ app/
 components/
   job-card.tsx  job-filters.tsx  salary.tsx  empty-state.tsx  turnstile.tsx
 lib/
-  kit.ts                       # server-only client instance (swap point for the real SDK)
-  kit-sdk-shim.ts              # typed API client + all contract types
+  kit.ts                       # server-only client instance + re-exported SDK types
   md5.ts                       # vendored MD5 (base64) for upload checksums
   jsonld.ts                    # schema.org JobPosting builder
+  sanitize.ts                  # HTML sanitizer for API-supplied markup
   format.ts  jobs.ts           # display helpers, shared job fetcher
 ```
 
