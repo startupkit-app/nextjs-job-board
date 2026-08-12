@@ -31,6 +31,30 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # Both entries below are blocked by eslint-config-next's nested plugins,
+      # not by anything in this repo. eslint-config-next is deliberately NOT
+      # ignored, so the update that unblocks either one still arrives.
+
+      # typescript-eslint (pulled in by eslint-config-next) throws at module load
+      # on TypeScript 7: `if (versionMajor >= 7) throw`, with a peer range of
+      # >=4.8.4 <6.1.0. `tsc --noEmit` and `next build` both pass on TS 7 - only
+      # `npm run lint` dies, before linting a single file.
+      #
+      # Scoped to 7.0.x deliberately: typescript-eslint tracks support for
+      # TS >=7.1 in typescript-eslint#10940, so 7.1 should still raise a PR.
+      - dependency-name: "typescript"
+        versions: ["7.0.x"]
+
+      # eslint-plugin-react@7.37.5 (nested under eslint-config-next, and still the
+      # newest published release) calls context.getFilename(), which ESLint 10
+      # removed, so linting dies with "contextOrFilename.getFilename is not a
+      # function". Note eslint-plugin-import and eslint-plugin-jsx-a11y are NOT at
+      # fault despite also capping their peer at ^9 - neither calls a removed API.
+      #
+      # ESLint 10 also requires node ^20.19.0 || ^22.13.0 || >=24.
+      - dependency-name: "eslint"
+        versions: ["10.x"]
 
   # ---------------------------------------------------------------------------
   # GitHub Actions
