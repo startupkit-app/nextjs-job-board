@@ -3,7 +3,7 @@
 import { useId, useRef, useState } from "react";
 import { formatBytes } from "@/lib/format";
 import { md5Base64 } from "@/lib/md5";
-import { createResumeUpload } from "./actions";
+import { createFileUpload } from "@/lib/upload-actions";
 
 type UploadStatus = "empty" | "hashing" | "presigning" | "uploading" | "done" | "error";
 
@@ -11,10 +11,10 @@ type UploadStatus = "empty" | "hashing" | "presigning" | "uploading" | "done" | 
  * Direct-to-storage file upload:
  *
  *   1. Compute the base64 MD5 checksum in the browser (lib/md5.ts).
- *   2. Ask the `createResumeUpload` Server Action (secret key) to presign.
+ *   2. Ask the `createFileUpload` Server Action (secret key) to presign.
  *   3. PUT the file straight to storage from the browser — large resumes never
  *      pass through the Next.js server, avoiding Vercel's ~4.5 MB body limit.
- *   4. Mirror the signed_id into a hidden input the apply form submits.
+ *   4. Mirror the signed_id into a hidden input the surrounding form submits.
  */
 export function FileUpload({
   name,
@@ -67,7 +67,7 @@ export function FileUpload({
       const checksum = md5Base64(await file.arrayBuffer());
 
       setStatus("presigning");
-      const presign = await createResumeUpload({
+      const presign = await createFileUpload({
         filename: file.name,
         byte_size: file.size,
         checksum,

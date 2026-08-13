@@ -21,6 +21,11 @@ and instant cache busting via webhooks.
 - **Direct-to-storage resume uploads** — the browser computes an MD5 checksum, a Server Action
   presigns the upload with your secret key, and the file PUTs straight to storage. Large files
   never touch your Next.js server (no Vercel 4.5 MB body-limit issues), with a real progress bar
+- **Talent-pool signup** at `/talent-pool` — a consent-first form for people who like the company
+  but not today's openings. The consent checkbox starts unchecked and its disclosure is rendered
+  from the API, the visitor's real IP is forwarded so the consent receipt records the person and
+  not your server, and Kit confirms the address by double opt-in. Adapting this into your own
+  codebase: hand your coding agent [TALENT_POOL.md](TALENT_POOL.md)
 - **Optional Cloudflare Turnstile** spam protection (progressive enhancement — just set a site key)
 - **Optional webhook revalidation** endpoint so newly published jobs appear instantly
 - **Tailwind CSS v4**, dark mode, responsive, zero UI-kit dependencies — maximally forkable
@@ -65,6 +70,7 @@ All API reads go through Next.js' data cache:
 
 - Job list: `revalidate: 60`, tagged `jobs`
 - Job detail / apply form: `revalidate: 300`, tagged `jobs` and `job-<token>`
+- Talent-pool form: `revalidate: 300`, tagged `talent-pool`
 
 So the site is never more than a minute or two stale, with zero configuration. For **instant**
 updates, create a webhook endpoint in Kit (Integrations → Webhooks) pointing at:
@@ -102,7 +108,7 @@ package. [`lib/kit.ts`](lib/kit.ts) is the single place that imports it: it re-e
 and exposes a `kit` client authenticated with the secret key. That module is marked `server-only`,
 so the key can never be bundled into a client component.
 
-The dependency is pinned as `^0.2.0`. A caret on a `0.x` version does not cross minor releases,
+The dependency is pinned as `^0.3.0`. A caret on a `0.x` version does not cross minor releases,
 so picking up a new SDK minor is always a deliberate edit here rather than something `npm install`
 does on its own — worth knowing when the API grows a field the template wants to read.
 
@@ -116,9 +122,12 @@ Base URL `https://app.startupkit.app`, auth via `Authorization: Bearer sk_…`:
 | `GET /api/public/v1/jobs/:public_token`        | Job detail, application form schema, JSON-LD               |
 | `POST /api/public/v1/direct_uploads`           | Presigning resume/file uploads (server action)             |
 | `POST /api/public/v1/jobs/:token/applications` | Submitting applications (server action)                    |
+| `GET /api/public/v1/talent_pool`               | Talent-pool form schema: fields, consent terms, resume     |
+| `POST /api/public/v1/talent_pool/entries`      | Talent-pool signups (server action)                        |
 
 Error responses (`{ "error": { "code", "message", "fields" } }`) are surfaced as inline form
-errors; `already_applied` (409) and `turnstile_failed` (422) get friendly dedicated messages.
+errors; `already_applied` (409), `already_in_talent_pool` (409), `consent_required` (422) and
+`turnstile_failed` (422) get friendly dedicated messages.
 
 ## Project structure
 
@@ -134,17 +143,23 @@ app/
     apply/
       page.tsx                 # Fetches the form schema server-side
       apply-form.tsx           # Client: dynamic field/question renderer, useActionState
-      actions.ts               # Server Actions: submitApplication, createResumeUpload
-      resume-upload.tsx        # Client: MD5 → presign → direct PUT with progress
+      actions.ts               # Server Action: submitApplication
+  talent-pool/
+    page.tsx                   # Talent-pool schema + consent terms (ISR 300s)
+    signup-form.tsx            # Client: consent-first signup form, useActionState
+    actions.ts                 # Server Action: joinTalentPool (forwards the consent IP)
   api/revalidate/route.ts      # Optional webhook → revalidateTag
 components/
+  file-upload.tsx              # Client: MD5 → presign → direct PUT with progress
   job-card.tsx  job-filters.tsx  salary.tsx  empty-state.tsx  turnstile.tsx
 lib/
   kit.ts                       # server-only client instance + re-exported SDK types
+  kit-errors.ts                # shared submission-failure copy + API field-error shaping
+  upload-actions.ts            # Server Action: createFileUpload (presign), shared by both forms
   md5.ts                       # vendored MD5 (base64) for upload checksums
   jsonld.ts                    # schema.org JobPosting builder
   sanitize.ts                  # HTML sanitizer for API-supplied markup
-  format.ts  jobs.ts           # display helpers, shared job fetcher
+  format.ts  jobs.ts  talent-pool.ts  # display helpers, cached job + talent-pool fetchers
 ```
 
 ## Scripts
@@ -156,6 +171,10 @@ npm run start       # serve the production build
 npm run lint        # eslint
 npm run typecheck   # tsc --noEmit
 ```
+
+## Changelog
+
+Notable changes are recorded in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useActionState, useEffect, useId, useMemo, useRef, useState } from "react";
+import { FileUpload } from "@/components/file-upload";
 import { Turnstile } from "@/components/turnstile";
 import type { ApplicationForm, FormField, Question } from "@/lib/kit";
-import { submitApplication, type ApplyState, type FieldErrors } from "./actions";
-import { FileUpload } from "./resume-upload";
+import type { FieldErrors } from "@/lib/kit-errors";
+import { submitApplication, type ApplyState } from "./actions";
 
 const INITIAL_STATE: ApplyState = { status: "idle" };
 const CORE_FIELD_NAMES = ["first_name", "last_name", "email", "phone"] as const;

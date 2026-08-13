@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { JobCard } from "@/components/job-card";
 import { JobFilters } from "@/components/job-filters";
+import { SetupNotice } from "@/components/setup-notice";
 import { kit, kitConfigured, type Job, type Pagination as PaginationData } from "@/lib/kit";
 
 const PER_PAGE = 20;
@@ -50,6 +51,12 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
             ? "No open positions right now."
             : `${pagination.total_count} open ${pagination.total_count === 1 ? "position" : "positions"}.`}
         </p>
+        <Link
+          href="/talent-pool"
+          className="mt-2 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+        >
+          Nothing that fits? Join our talent pool →
+        </Link>
       </div>
 
       <Suspense>
@@ -65,18 +72,26 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           title={hasFilters ? "No matching roles" : "No open roles right now"}
           description={
             hasFilters
-              ? "Try removing a filter or two — or check back soon."
-              : "We're not hiring at the moment, but new roles open up regularly. Check back soon."
+              ? "Try removing a filter or two — or join our talent pool and we'll email you when a matching role opens."
+              : "We're not hiring at the moment, but new roles open up regularly. Join our talent pool and we'll get in touch when one fits."
           }
           action={
-            hasFilters ? (
+            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+              {hasFilters && (
+                <Link
+                  href="/"
+                  className="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+                >
+                  Clear all filters
+                </Link>
+              )}
               <Link
-                href="/"
-                className="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+                href="/talent-pool"
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
               >
-                Clear all filters
+                Join our talent pool
               </Link>
-            ) : undefined
+            </div>
           }
         />
       ) : (
@@ -148,35 +163,5 @@ function Pagination({
         <span />
       )}
     </nav>
-  );
-}
-
-function SetupNotice() {
-  return (
-    <div className="mx-auto max-w-xl rounded-xl border border-amber-300 bg-amber-50 p-6 dark:border-amber-700 dark:bg-amber-950">
-      <h1 className="text-lg font-semibold text-amber-900 dark:text-amber-100">
-        Almost there — connect your Kit account
-      </h1>
-      <p className="mt-2 text-sm leading-6 text-amber-800 dark:text-amber-200">
-        This job board needs a Kit API key. Grab your secret key from{" "}
-        <strong>Kit → Hiring → Career Portal → Public API Keys</strong>, then set it as the{" "}
-        <code className="rounded bg-amber-100 px-1 py-0.5 font-mono text-xs dark:bg-amber-900">
-          STARTUPKIT_SECRET_KEY
-        </code>{" "}
-        environment variable and restart (or redeploy) the app.
-      </p>
-      <p className="mt-3 text-sm text-amber-800 dark:text-amber-200">
-        See the{" "}
-        <a
-          href="https://startupkit.app/docs/public-jobs-api"
-          className="font-medium underline underline-offset-2"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Public Jobs API docs
-        </a>{" "}
-        for details.
-      </p>
-    </div>
   );
 }

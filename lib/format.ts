@@ -22,6 +22,18 @@ export function formatEmploymentType(value: string | null | undefined): string |
   return EMPLOYMENT_TYPE_LABELS[value] ?? humanize(value);
 }
 
+const TALENT_POOL_FIELD_LABELS: Record<string, string> = {
+  email: "Email",
+  linkedin_url: "LinkedIn profile",
+  resume: "Resume / CV",
+  resume_signed_id: "Resume / CV",
+};
+
+/** Label for a talent-pool field — the API ships wire names, not display text. */
+export function talentPoolFieldLabel(name: string): string {
+  return TALENT_POOL_FIELD_LABELS[name] ?? humanize(name);
+}
+
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return "";
   const date = new Date(iso);
