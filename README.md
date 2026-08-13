@@ -24,7 +24,8 @@ and instant cache busting via webhooks.
 - **Talent-pool signup** at `/talent-pool` — a consent-first form for people who like the company
   but not today's openings. The consent checkbox starts unchecked and its disclosure is rendered
   from the API, the visitor's real IP is forwarded so the consent receipt records the person and
-  not your server, and Kit confirms the address by double opt-in
+  not your server, and Kit confirms the address by double opt-in. Adapting this into your own
+  codebase: hand your coding agent [TALENT_POOL.md](TALENT_POOL.md)
 - **Optional Cloudflare Turnstile** spam protection (progressive enhancement — just set a site key)
 - **Optional webhook revalidation** endpoint so newly published jobs appear instantly
 - **Tailwind CSS v4**, dark mode, responsive, zero UI-kit dependencies — maximally forkable
@@ -170,6 +171,10 @@ npm run start       # serve the production build
 npm run lint        # eslint
 npm run typecheck   # tsc --noEmit
 ```
+
+## Changelog
+
+Notable changes are recorded in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
