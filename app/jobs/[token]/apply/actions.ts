@@ -1,31 +1,19 @@
 "use server";
 
 import { fetchJob } from "@/lib/jobs";
-import { kit, KitApiError, type UploadMeta } from "@/lib/kit";
-
-/**
- * The Kit API rate-limits applications and upload presigns per client IP. This
- * template submits through a Server Action, so every applicant reaches the API
- * from the same server egress IP and they all share one bucket. That makes 429
- * a realistic response on a busy careers page rather than an edge case, so it
- * gets a message that tells the applicant what to do instead of reading as a
- * generic failure.
- */
-const RATE_LIMITED_MESSAGE =
-  "We're receiving a lot of applications right now. Please wait a few minutes and try again — your answers will still be here.";
+import { kit, KitApiError } from "@/lib/kit";
+import {
+  normalizeApiFieldErrors,
+  RATE_LIMITED_MESSAGE,
+  type FieldErrors,
+} from "@/lib/kit-errors";
 
 // ─── Types shared with the client form (type-only — erased at runtime) ───────
-
-export type FieldErrors = Record<string, string>;
 
 export type ApplyState =
   | { status: "idle" }
   | { status: "success"; applicationId: string; submittedAt: string }
   | { status: "error"; message: string; fieldErrors?: FieldErrors };
-
-export type PresignResult =
-  | { ok: true; signedId: string; url: string; headers: Record<string, string> }
-  | { ok: false; error: string };
 
 /** Core contact fields submitted at the top level of the application payload. */
 const CORE_FIELDS = new Set(["email", "first_name", "last_name", "phone"]);
@@ -168,44 +156,4 @@ export async function submitApplication(
       message: "Something went wrong while submitting your application. Please try again.",
     };
   }
-}
-
-/**
- * Presigns a direct upload via the Kit API (secret key, server-side). The
- * browser then PUTs the file straight to storage — bypassing Vercel's ~4.5 MB
- * request body limit — and submits the returned signed_id with the form.
- */
-export async function createResumeUpload(meta: UploadMeta): Promise<PresignResult> {
-  if (!meta?.filename || !meta.byte_size || !meta.checksum || !meta.content_type) {
-    return { ok: false, error: "Incomplete file metadata." };
-  }
-
-  try {
-    const { signed_id, direct_upload } = await kit.createUpload(meta);
-    return { ok: true, signedId: signed_id, url: direct_upload.url, headers: direct_upload.headers };
-  } catch (error) {
-    if (error instanceof KitApiError) {
-      if (error.status === 429) {
-        return { ok: false, error: RATE_LIMITED_MESSAGE };
-      }
-      return { ok: false, error: error.message };
-    }
-    console.error("Direct upload presign failed:", error);
-    return { ok: false, error: "Couldn't prepare the upload. Please try again." };
-  }
-}
-
-function normalizeApiFieldErrors(
-  fields: Record<string, string | string[]> | undefined
-): FieldErrors | undefined {
-  if (!fields) return undefined;
-
-  const normalized: FieldErrors = {};
-  for (const [key, messages] of Object.entries(fields)) {
-    // API keys may be nested ("responses.q_team_size") — index by the leaf so
-    // the form can match them to inputs by field name / question key.
-    const leaf = key.replace(/^(application|responses|files)\./, "");
-    normalized[leaf] = Array.isArray(messages) ? messages.join(" ") : messages;
-  }
-  return normalized;
 }
