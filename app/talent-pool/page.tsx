@@ -1,14 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { TALENT_POOL_REVALIDATE, fetchTalentPool } from "@/lib/talent-pool";
+import { SetupNotice } from "@/components/setup-notice";
+import { kitConfigured } from "@/lib/kit";
+import { fetchTalentPool } from "@/lib/talent-pool";
 import { SignupForm } from "./signup-form";
 
-export const revalidate = TALENT_POOL_REVALIDATE;
+// Next evaluates segment config statically, so this must stay a literal — an
+// imported constant fails the build. Keep it in step with TALENT_POOL_REVALIDATE.
+export const revalidate = 300;
 
 const companyName = process.env.NEXT_PUBLIC_COMPANY_NAME || "our company";
 
 export async function generateMetadata(): Promise<Metadata> {
+  if (!kitConfigured) return { title: "Talent pool", robots: { index: false } };
+
   const form = await fetchTalentPool();
   if (!form) return { title: "Talent pool", robots: { index: false } };
 
@@ -23,6 +29,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function TalentPoolPage() {
+  if (!kitConfigured) return <SetupNotice />;
+
   const form = await fetchTalentPool();
   if (!form) notFound();
 
