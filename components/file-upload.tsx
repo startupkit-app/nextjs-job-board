@@ -109,7 +109,9 @@ export function FileUpload({
       <label htmlFor={inputId} className="block text-sm font-medium text-zinc-900 dark:text-zinc-100">
         {label}
         {required && (
-          <span aria-hidden="true" className="ml-0.5 text-red-600 dark:text-red-400">
+          // Muted to match the other required marks on the page; red is
+          // reserved for actual errors.
+          <span aria-hidden="true" className="ml-0.5 text-zinc-400 dark:text-zinc-500">
             *
           </span>
         )}
@@ -168,7 +170,7 @@ export function FileUpload({
       </p>
 
       {errorMessage && (
-        <p id={`${inputId}-error`} role="alert" className="mt-1.5 text-sm text-red-600 dark:text-red-400">
+        <p id={`${inputId}-error`} className="mt-1.5 text-sm font-medium text-red-600 dark:text-red-400">
           {errorMessage}
         </p>
       )}
