@@ -2,7 +2,7 @@ import { formatCurrencyAmount, humanize } from "@/lib/format";
 import type { Stage } from "@/lib/kit";
 
 export function HiringProcess({ stages }: { stages: readonly Stage[] }) {
-  const hasPaidStage = stages.some((stage) => stage.compensation);
+  const paidStageCount = stages.filter((stage) => stage.compensation).length;
 
   if (stages.length === 0) return null;
 
@@ -11,11 +11,17 @@ export function HiringProcess({ stages }: { stages: readonly Stage[] }) {
       <h2 id="hiring-process" className="text-lg font-semibold">
         Hiring process
       </h2>
-      {hasPaidStage && (
-        <p className="mt-1.5 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-          Marked stages are eligible for a one-time payment, processed after you complete that
-          step. This is separate from the role&apos;s salary.
-        </p>
+      {paidStageCount > 0 && (
+        <div className="mt-4 max-w-2xl rounded-lg border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950">
+          <p className="text-sm font-semibold leading-6 text-indigo-950 dark:text-indigo-100">
+            Some teams pay candidates for time-intensive hiring steps. This process includes{" "}
+            {paidStageCount === 1 ? "one" : paidStageCount}.
+          </p>
+          <p className="mt-1 text-sm leading-6 text-indigo-800 dark:text-indigo-200">
+            Complete a marked step to become eligible for the one-time amount shown. Stage
+            payments are separate from the role&apos;s salary.
+          </p>
+        </div>
       )}
 
       <ol className="mt-5" aria-label="Hiring process steps">
@@ -73,8 +79,9 @@ function StagePayment({ amount, currency }: { amount: number; currency: string }
         />
         <path d="M5 15.25a.75.75 0 0 1 .75-.75h8.5a.75.75 0 0 1 0 1.5h-8.5a.75.75 0 0 1-.75-.75Zm2 2.25a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5A.75.75 0 0 1 7 17.5Z" />
       </svg>
-      <span>Eligible for one-time payment</span>
-      <strong className="font-semibold text-indigo-950 dark:text-indigo-100">
+      <span className="font-medium">Paid step</span>
+      <span aria-hidden="true">·</span>
+      <strong className="font-semibold tabular-nums text-indigo-950 dark:text-indigo-100">
         {formattedAmount}
       </strong>
     </p>
