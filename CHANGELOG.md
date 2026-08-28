@@ -8,6 +8,8 @@ tagged or released to a registry, so entries are grouped by date instead of vers
 
 ### Added
 
+- Hiring-process timeline support for optional paid-stage compensation, presented as explicit
+  eligibility for a one-time payment with responsive, accessible light/dark styling
 - Talent-pool signup page at `/talent-pool`, rendered from `GET /api/public/v1/talent_pool` and submitted to `POST /api/public/v1/talent_pool/entries`
 - Consent checkbox that starts unchecked, labelled with the API's disclosure HTML (sanitized server-side at the fetch boundary)
 - The visitor's IP is forwarded as `consent_ip_address` so the consent receipt records the person, not this server's egress address
@@ -19,7 +21,9 @@ tagged or released to a registry, so entries are grouped by date instead of vers
 
 - Resume uploader moved to `components/file-upload.tsx` and its presign action to `lib/upload-actions.ts`, shared by both forms
 - Shared submission-failure copy and API field-error shaping extracted to `lib/kit-errors.ts`; the rate-limit message now says "submissions" rather than "applications"
-- `@startupkit-app/jobs` dependency raised to `^0.3.0` for `getTalentPool()` and `joinTalentPool()`
+- `@startupkit-app/jobs` dependency raised to `^0.4.0` for the talent-pool methods and typed
+  stage-level compensation contract
+- Minimum Node.js version raised to 20.19.0 to match the SDK's supported runtime floor
 
 ## 2026-08-13
 

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { HiringProcess } from "@/components/hiring-process";
 import { Salary } from "@/components/salary";
-import { formatDate, formatEmploymentType, humanize } from "@/lib/format";
+import { formatDate, formatEmploymentType } from "@/lib/format";
 import { jobPostingJsonLd, serializeJsonLd } from "@/lib/jsonld";
 import { fetchJob } from "@/lib/jobs";
 import { kit } from "@/lib/kit";
@@ -94,29 +95,7 @@ export default async function JobPage({ params }: { params: Params }) {
         dangerouslySetInnerHTML={{ __html: job.description_html }}
       />
 
-      {job.stages.length > 0 && (
-        <section aria-labelledby="hiring-process">
-          <h2 id="hiring-process" className="text-lg font-semibold">
-            Hiring process
-          </h2>
-          <ol className="mt-4 space-y-3">
-            {job.stages.map((stage, index) => (
-              <li key={`${stage.name}-${index}`} className="flex items-center gap-3">
-                <span
-                  aria-hidden="true"
-                  className="flex size-7 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-xs font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
-                >
-                  {index + 1}
-                </span>
-                <div className="text-sm">
-                  <span className="font-medium text-zinc-900 dark:text-zinc-100">{stage.name}</span>
-                  <span className="ml-2 text-zinc-500 dark:text-zinc-400">{humanize(stage.type)}</span>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </section>
-      )}
+      <HiringProcess stages={job.stages} />
 
       <div className="border-t border-zinc-200 pt-6 dark:border-zinc-800">
         <ApplyButton token={job.id} accepting={job.accepting_applications} />
