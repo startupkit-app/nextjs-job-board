@@ -13,9 +13,10 @@ and instant cache busting via webhooks.
 
 - **Next.js App Router** (v16) — Server Components, Server Actions, ISR with tag-based revalidation
 - **Job list** with URL-driven filters (department, location, employment type, remote) and pagination
-- **Job detail pages** with salary ranges, hiring-process timeline, clearly labelled one-time
-  stage payments, and schema.org `JobPosting` JSON-LD (Google for Jobs ready), statically
-  generated via `generateStaticParams` + ISR
+- **Job detail pages** with salary ranges, a hiring-process timeline, and exact one-time amounts
+  beside paid hiring steps — clearly separated from the role's salary — plus schema.org
+  `JobPosting` JSON-LD (Google for Jobs ready), statically generated via
+  `generateStaticParams` + ISR
 - **Application form rendered from the API schema** — all 8 field types (text, textarea, file,
   url, select, checkbox, email, phone) and all 3 question types (text, scenario, multiple choice),
   with inline validation errors, character counters, and full keyboard/screen-reader accessibility
@@ -130,11 +131,12 @@ Error responses (`{ "error": { "code", "message", "fields" } }`) are surfaced as
 errors; `already_applied` (409), `already_in_talent_pool` (409), `consent_required` (422) and
 `turnstile_failed` (422) get friendly dedicated messages.
 
-On job details, hiring stages may include an optional
-`compensation: { amount, currency }` object. The timeline labels the stage as **eligible for a
-one-time payment** after completion, separately from the job's recurring salary. Older API
-responses that omit `compensation` render exactly as before. This template consumes that field
-through `@startupkit-app/jobs` 0.4 or newer.
+Some teams pay candidates for time-intensive hiring steps. When they do, the job detail API
+includes an optional `compensation: { amount, currency }` object on the stage. The timeline shows
+the exact one-time amount beside that step and explains when the candidate becomes eligible,
+separately from the role's salary. Jobs and stages without compensation render exactly as before;
+they are never labelled "unpaid." This template consumes the field through
+`@startupkit-app/jobs` 0.4 or newer.
 
 ## Project structure
 

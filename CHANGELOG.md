@@ -8,8 +8,8 @@ tagged or released to a registry, so entries are grouped by date instead of vers
 
 ### Added
 
-- Hiring-process timeline support for optional paid-stage compensation, presented as explicit
-  eligibility for a one-time payment with responsive, accessible light/dark styling
+- Hiring-process timeline support for optional paid-stage compensation, with a candidate-first
+  explanation and exact `Paid step · amount` markers in responsive light/dark styling
 - Talent-pool signup page at `/talent-pool`, rendered from `GET /api/public/v1/talent_pool` and submitted to `POST /api/public/v1/talent_pool/entries`
 - Consent checkbox that starts unchecked, labelled with the API's disclosure HTML (sanitized server-side at the fetch boundary)
 - The visitor's IP is forwarded as `consent_ip_address` so the consent receipt records the person, not this server's egress address
