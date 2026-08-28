@@ -41,6 +41,21 @@ export function formatDate(iso: string | null | undefined): string {
   return new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(date);
 }
 
+/** Uses known currency minor units and falls back safely for configured custom codes. */
+export function formatCurrencyAmount(amount: number, currency: string): string {
+  const normalizedCurrency = currency.toUpperCase();
+
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: normalizedCurrency,
+    }).format(amount);
+  } catch {
+    const formatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+    return `${formatter.format(amount)} ${normalizedCurrency}`;
+  }
+}
+
 export function formatBytes(bytes: number): string {
   if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
   if (bytes >= 1024 ** 2) return `${Math.round(bytes / 1024 ** 2)} MB`;
