@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@startupkit-app/jobs": "^0.4.0",
-    "next": "^16.3.2",
+    "next": "^16.3.3",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "sanitize-html": "^2.17.7",
@@ -20,12 +20,12 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
-    "@types/node": "^26.2.0",
+    "@types/node": "^26.4.0",
     "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
+    "@types/react-dom": "^19.2.5",
     "@types/sanitize-html": "^2.16.1",
     "eslint": "^9.39.5",
-    "eslint-config-next": "^16.3.2",
+    "eslint-config-next": "^16.3.3",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3"
   },
