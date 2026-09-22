@@ -10,7 +10,7 @@ career portal sends them itself; a headless site has to, or the dashboard stays 
 `POST /api/public/v1/events` straight from the visitor's browser; Kit records them as the same
 events the hosted portal writes, so every chart fills in unchanged.
 
-Four things to get right:
+Five things to get right:
 
 1. **Publishable (`pk_…`) key, browser only.** Visitor identity and geo are read from the
    browser's own request, so a server-side relay would count every visitor as your server.
@@ -20,9 +20,13 @@ Four things to get right:
 2. **Track in the browser, not on the server.** Pages are ISR/statically cached, so a
    server-side call would fire once per regeneration, not once per visitor.
 3. **Count each view once.** Guard `useEffect` with a ref: React StrictMode double-invokes
-   effects in development, and an autofocused first field fires the form's `onFocus` during mount.
-   Listen to `onInput` as well: typing into the autofocused field fires no new focus event.
-4. **Success only.** `applicationSubmitted` / `talentPoolJoined` fire when the submission
+   effects in development.
+4. **Autofocus is not a start.** An autofocused first field fires the form's `onFocus` without
+   the applicant doing anything: during mount on client-side navigation, and after hydration on
+   a direct page load (the server-rendered `autofocus` attribute), when a mount guard is already
+   off. Ignore focus events whose target is the autofocused field, and listen to `onInput` as
+   well: typing into it fires no new focus event.
+5. **Success only.** `applicationSubmitted` / `talentPoolJoined` fire when the submission
    succeeded, never on a rejection.
 
 ## Steps
@@ -34,8 +38,8 @@ Four things to get right:
    ```bash
    # Publishable key (pk_…). Unset = analytics off. No-op without it.
    NEXT_PUBLIC_STARTUPKIT_PUBLISHABLE_KEY=
-   # Only alongside a custom STARTUPKIT_BASE_URL.
-   NEXT_PUBLIC_STARTUPKIT_BASE_URL=
+   # Only alongside a custom STARTUPKIT_BASE_URL. Keep it commented out otherwise.
+   # NEXT_PUBLIC_STARTUPKIT_BASE_URL=https://kit.example.com
    ```
 
 3. Create `lib/kit-tracker.ts`. Client-safe: no `server-only` import, no secret key. Do not
@@ -46,7 +50,8 @@ Four things to get right:
 
    export const tracker = createTracker({
      publishableKey: process.env.NEXT_PUBLIC_STARTUPKIT_PUBLISHABLE_KEY,
-     baseUrl: process.env.NEXT_PUBLIC_STARTUPKIT_BASE_URL,
+     // A blank `NEXT_PUBLIC_STARTUPKIT_BASE_URL=` line inlines "", which `new URL` rejects.
+     baseUrl: process.env.NEXT_PUBLIC_STARTUPKIT_BASE_URL || undefined,
      onError:
        process.env.NODE_ENV === "development"
          ? (error) => console.warn("Kit analytics:", error)
@@ -95,23 +100,30 @@ Four things to get right:
    ```tsx
    import { tracker } from "@/lib/kit-tracker";
 
-   // The first field autofocuses during mount, so that focus isn't the applicant's;
-   // typing into it fires no new focus, hence onInput too. The tracker dedupes per job.
+   // Autofocus isn't the applicant's doing: React focuses during a client-side mount, and
+   // the browser focuses the SSR `autofocus` attribute only after hydration's effects ran.
    const mounted = useRef(false);
    useEffect(() => {
      mounted.current = true;
    }, []);
-   const handleInteraction = useCallback(() => {
-     if (mounted.current) tracker.applicationStarted(token);
-   }, [token]);
+   const handleFocus = useCallback(
+     (event: React.FocusEvent<HTMLFormElement>) => {
+       const target = event.target as HTMLElement;
+       if (mounted.current && !target.autofocus) tracker.applicationStarted(token);
+     },
+     [token]
+   );
+   // Typing into the autofocused field fires no new focus event. The tracker dedupes per job.
+   const handleInput = useCallback(() => tracker.applicationStarted(token), [token]);
 
    useEffect(() => {
      if (state.status === "success") tracker.applicationSubmitted(token);
    }, [state.status, token]);
    ```
 
-   and `<form onFocus={handleInteraction} onInput={handleInteraction} …>`. `token` is the job's public token prop; `state` is
-   the `useActionState` result. If the form has no autofocus, drop the `mounted` guard.
+   and `<form onFocus={handleFocus} onInput={handleInput} …>`. `token` is the job's public
+   token prop; `state` is the `useActionState` result. If the form has no autofocus, drop the
+   `mounted` guard and the `autofocus` check.
 
 7. In the talent-pool form (`app/talent-pool/signup-form.tsx`), before the success early return:
 
