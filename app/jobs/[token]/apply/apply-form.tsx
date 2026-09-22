@@ -14,6 +14,7 @@ import { FileUpload } from "@/components/file-upload";
 import { Turnstile } from "@/components/turnstile";
 import type { ApplicationForm, FormField, Question } from "@/lib/kit";
 import type { FieldErrors } from "@/lib/kit-errors";
+import { tracker } from "@/lib/kit-tracker";
 import { submitApplication, type ApplyState } from "./actions";
 import {
   buildRules,
@@ -144,6 +145,20 @@ export function ApplyForm({
     setValues((previous) => ({ ...previous, [inputName]: next }));
   }, []);
 
+  // The first field autofocuses during mount, so that focus isn't the applicant's;
+  // typing into it fires no new focus, hence onInput too. The tracker dedupes per job.
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+  }, []);
+  const handleInteraction = useCallback(() => {
+    if (mounted.current) tracker.applicationStarted(token);
+  }, [token]);
+
+  useEffect(() => {
+    if (state.status === "success") tracker.applicationSubmitted(token);
+  }, [state.status, token]);
+
   if (state.status === "success") {
     return <SuccessPanel jobTitle={jobTitle} applicationId={state.applicationId} />;
   }
@@ -184,7 +199,7 @@ export function ApplyForm({
   const turnstileSitekey = form.turnstile.sitekey || process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || null;
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-7">
+    <form onSubmit={handleSubmit} onFocus={handleInteraction} onInput={handleInteraction} noValidate className="space-y-7">
       {state.status === "error" && (
         <div
           ref={summaryRef}
