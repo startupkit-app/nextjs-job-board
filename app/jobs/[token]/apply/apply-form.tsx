@@ -145,13 +145,13 @@ export function ApplyForm({
     setValues((previous) => ({ ...previous, [inputName]: next }));
   }, []);
 
-  // The first field autofocuses during mount, before effects run; only focus
-  // after that is the applicant's own. The tracker dedupes per job.
+  // The first field autofocuses during mount, so that focus isn't the applicant's;
+  // typing into it fires no new focus, hence onInput too. The tracker dedupes per job.
   const mounted = useRef(false);
   useEffect(() => {
     mounted.current = true;
   }, []);
-  const handleFocus = useCallback(() => {
+  const handleInteraction = useCallback(() => {
     if (mounted.current) tracker.applicationStarted(token);
   }, [token]);
 
@@ -199,7 +199,7 @@ export function ApplyForm({
   const turnstileSitekey = form.turnstile.sitekey || process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || null;
 
   return (
-    <form onSubmit={handleSubmit} onFocus={handleFocus} noValidate className="space-y-7">
+    <form onSubmit={handleSubmit} onFocus={handleInteraction} onInput={handleInteraction} noValidate className="space-y-7">
       {state.status === "error" && (
         <div
           ref={summaryRef}

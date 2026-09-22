@@ -10,7 +10,7 @@ tagged or released to a registry, so entries are grouped by date instead of vers
 
 - Kit job analytics, reported from the visitor's browser by the `@startupkit-app/jobs` 0.5
   tracker: `job_board.viewed` and `job.viewed` page views, `application.started` on the first
-  focus inside the apply form, `application.submitted` and `talent_pool.joined` on success. Kit
+  focus or keystroke in the apply form, `application.submitted` and `talent_pool.joined` on success. Kit
   → Hiring → Analytics (views, unique visitors, traffic sources, UTM campaigns, countries,
   devices, landing pages, view → apply funnel) fills in for this site as it does for the hosted
   portal
@@ -55,8 +55,8 @@ reports it to `onError` and the page is unaffected.
      `useEffect` guarded by a ref so StrictMode does not double-count.
    - `app/page.tsx`: render `<TrackJobBoardView />` in the job list.
    - `app/jobs/[token]/page.tsx`: render `<TrackJobView job={job.id} />` in the job detail.
-   - `app/jobs/[token]/apply/apply-form.tsx`: `<form onFocus={handleFocus}>` →
-     `tracker.applicationStarted(token)` (skipped for the mount-time autofocus), and
+   - `app/jobs/[token]/apply/apply-form.tsx`: `<form onFocus onInput>` →
+     `tracker.applicationStarted(token)` (skipping the mount-time autofocus), and
      `tracker.applicationSubmitted(token)` in an effect on `state.status === "success"`.
    - `app/talent-pool/signup-form.tsx`: `tracker.talentPoolJoined()` in an effect on
      `state.status === "success"`.
@@ -88,8 +88,8 @@ and follow it exactly).
    route param):
    - `<TrackJobBoardView />` in the jobs list page, after any "not configured" early return.
    - `<TrackJobView job={job.id} />` in the job detail page.
-   - Apply form: `tracker.applicationStarted(token)` from the form's onFocus, skipping the
-     focus event an autofocused field fires during mount; `tracker.applicationSubmitted(token)`
+   - Apply form: `tracker.applicationStarted(token)` from the form's onFocus and onInput,
+     skipping the focus event an autofocused field fires during mount; `tracker.applicationSubmitted(token)`
      once, in an effect when the action state becomes success. Never on failure.
    - Talent-pool form: `tracker.talentPoolJoined()` once, in an effect when the action state
      becomes success. Never on failure.

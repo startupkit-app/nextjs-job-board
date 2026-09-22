@@ -21,6 +21,7 @@ Four things to get right:
    server-side call would fire once per regeneration, not once per visitor.
 3. **Count each view once.** Guard `useEffect` with a ref: React StrictMode double-invokes
    effects in development, and an autofocused first field fires the form's `onFocus` during mount.
+   Listen to `onInput` as well: typing into the autofocused field fires no new focus event.
 4. **Success only.** `applicationSubmitted` / `talentPoolJoined` fire when the submission
    succeeded, never on a rejection.
 
@@ -94,13 +95,13 @@ Four things to get right:
    ```tsx
    import { tracker } from "@/lib/kit-tracker";
 
-   // The first field autofocuses during mount, before effects run; only focus
-   // after that is the applicant's own. The tracker dedupes per job.
+   // The first field autofocuses during mount, so that focus isn't the applicant's;
+   // typing into it fires no new focus, hence onInput too. The tracker dedupes per job.
    const mounted = useRef(false);
    useEffect(() => {
      mounted.current = true;
    }, []);
-   const handleFocus = useCallback(() => {
+   const handleInteraction = useCallback(() => {
      if (mounted.current) tracker.applicationStarted(token);
    }, [token]);
 
@@ -109,7 +110,7 @@ Four things to get right:
    }, [state.status, token]);
    ```
 
-   and `<form onFocus={handleFocus} …>`. `token` is the job's public token prop; `state` is
+   and `<form onFocus={handleInteraction} onInput={handleInteraction} …>`. `token` is the job's public token prop; `state` is
    the `useActionState` result. If the form has no autofocus, drop the `mounted` guard.
 
 7. In the talent-pool form (`app/talent-pool/signup-form.tsx`), before the success early return:
