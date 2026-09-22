@@ -10,10 +10,10 @@ tagged or released to a registry, so entries are grouped by date instead of vers
 
 - Kit job analytics, reported from the visitor's browser by the `@startupkit-app/jobs` 0.5
   tracker: `job_board.viewed` and `job.viewed` page views, `application.started` on the first
-  focus or keystroke in the apply form, `application.submitted` and `talent_pool.joined` on success. Kit
-  → Hiring → Analytics (views, unique visitors, traffic sources, UTM campaigns, countries,
-  devices, landing pages, view → apply funnel) fills in for this site as it does for the hosted
-  portal
+  keystroke, or focus other than the first field's autofocus, in the apply form,
+  `application.submitted` and `talent_pool.joined` on success. Kit → Hiring → Analytics (views,
+  unique visitors, traffic sources, UTM campaigns, countries, devices, landing pages,
+  view → apply funnel) fills in for this site as it does for the hosted portal
 - `NEXT_PUBLIC_STARTUPKIT_PUBLISHABLE_KEY` (`pk_…`) turns analytics on; unset, the tracker is a
   no-op. `NEXT_PUBLIC_STARTUPKIT_BASE_URL` is the browser-side counterpart of
   `STARTUPKIT_BASE_URL` for custom Kit domains
@@ -37,6 +37,18 @@ tagged or released to a registry, so entries are grouped by date instead of vers
   for the talent-pool methods and typed stage-level compensation contract)
 - Minimum Node.js version raised to 20.19.0 to match the SDK's supported runtime floor
 
+### Fixed
+
+- `application.started` fired on every direct load of an apply page, so the funnel's "started"
+  equalled apply-page views. The `mounted` ref only skipped React's autofocus on client-side
+  navigation; on a hard load the form streams in behind `loading.tsx` and the browser focuses
+  its server-rendered `autofocus` field after hydration, when the guard is already off. Focus on the autofocused field no longer counts;
+  typing into it still does
+- A blank `NEXT_PUBLIC_STARTUPKIT_BASE_URL=` line (as `.env.example` shipped it) crashed every
+  page importing the tracker: Next.js inlines `""`, and `createTracker` in SDK 0.5.0 throws on
+  `new URL("…", "")`. `lib/kit-tracker.ts` now passes `|| undefined`, and `.env.example` ships
+  the variable commented out
+
 ### Upgrade guide: job analytics for existing forks
 
 Optional, and a no-op until `NEXT_PUBLIC_STARTUPKIT_PUBLISHABLE_KEY` is set. Requires the Kit
@@ -56,7 +68,7 @@ reports it to `onError` and the page is unaffected.
    - `app/page.tsx`: render `<TrackJobBoardView />` in the job list.
    - `app/jobs/[token]/page.tsx`: render `<TrackJobView job={job.id} />` in the job detail.
    - `app/jobs/[token]/apply/apply-form.tsx`: `<form onFocus onInput>` →
-     `tracker.applicationStarted(token)` (skipping the mount-time autofocus), and
+     `tracker.applicationStarted(token)` (skipping focus on the autofocused field), and
      `tracker.applicationSubmitted(token)` in an effect on `state.status === "success"`.
    - `app/talent-pool/signup-form.tsx`: `tracker.talentPoolJoined()` in an effect on
      `state.status === "success"`.
@@ -89,7 +101,7 @@ and follow it exactly).
    - `<TrackJobBoardView />` in the jobs list page, after any "not configured" early return.
    - `<TrackJobView job={job.id} />` in the job detail page.
    - Apply form: `tracker.applicationStarted(token)` from the form's onFocus and onInput,
-     skipping the focus event an autofocused field fires during mount; `tracker.applicationSubmitted(token)`
+     ignoring focus events whose target is the autofocused field; `tracker.applicationSubmitted(token)`
      once, in an effect when the action state becomes success. Never on failure.
    - Talent-pool form: `tracker.talentPoolJoined()` once, in an effect when the action state
      becomes success. Never on failure.
@@ -99,6 +111,64 @@ and follow it exactly).
    returning 202. 401/403 means the key or its allowed origins are wrong in Kit (Hiring →
    Career Portal → Public API Keys); 404 means the Kit server is not on a release with the
    endpoint yet. The page must work either way.
+````
+
+### Upgrade guide: analytics fixes for forks that already added analytics
+
+Skip this if you have not added analytics yet: the guide above already includes both fixes.
+
+1. `app/jobs/[token]/apply/apply-form.tsx`: replace the `mounted` / `handleInteraction` block
+   with the one below, and change the form to `<form onFocus={handleFocus} onInput={handleInput} …>`.
+
+   ```tsx
+   const mounted = useRef(false);
+   useEffect(() => {
+     mounted.current = true;
+   }, []);
+   const handleFocus = useCallback(
+     (event: React.FocusEvent<HTMLFormElement>) => {
+       const target = event.target as HTMLElement;
+       if (mounted.current && !target.autofocus) tracker.applicationStarted(token);
+     },
+     [token]
+   );
+   const handleInput = useCallback(() => tracker.applicationStarted(token), [token]);
+   ```
+
+2. `lib/kit-tracker.ts`: `baseUrl: process.env.NEXT_PUBLIC_STARTUPKIT_BASE_URL || undefined`.
+   In `.env.example` (and any real `.env*` file), comment out a blank
+   `NEXT_PUBLIC_STARTUPKIT_BASE_URL=` line.
+3. Verify: `npm run lint && npm run typecheck && npm run build`; run the site with the key set,
+   open `/jobs/<token>/apply` directly (a hard reload, not a click from the job page) and
+   DevTools → Network shows no `POST /api/public/v1/events` whose body contains
+   `application.started`. Type one character into the first field: exactly one
+   `application.started` is sent (batches flush after about a second). Against a fast local API
+   the old code may not misfire: it does once the form streams in after hydration, as it does
+   with the real Kit API's latency.
+
+#### Prompt for your AI coding agent
+
+````text
+This site is a fork of github.com/startupkit-app/nextjs-job-board with Kit analytics already
+added. Apply two fixes from that repo's CHANGELOG (Unreleased → Fixed); change nothing else.
+
+1. In the apply form client component (app/jobs/[token]/apply/apply-form.tsx or its
+   equivalent), `tracker.applicationStarted` must not fire for the autofocused first field's
+   focus. On a direct page load the browser focuses the server-rendered `autofocus` field after
+   hydration, so a mounted-ref guard alone does not skip it. Replace the single
+   onFocus/onInput handler with two:
+   - handleFocus(event: React.FocusEvent<HTMLFormElement>): call
+     tracker.applicationStarted(token) only if the mounted ref is set AND
+     `(event.target as HTMLElement).autofocus` is false.
+   - handleInput(): always call tracker.applicationStarted(token).
+   Wire them as <form onFocus={handleFocus} onInput={handleInput}>. Keep the existing
+   applicationSubmitted effect unchanged.
+2. In lib/kit-tracker.ts pass `baseUrl: process.env.NEXT_PUBLIC_STARTUPKIT_BASE_URL || undefined`
+   so an empty string never reaches createTracker. In .env.example, comment out the
+   NEXT_PUBLIC_STARTUPKIT_BASE_URL line if it is an empty assignment.
+3. Run `npm run lint && npm run typecheck && npm run build` and fix any failure.
+4. Tell me to verify in the browser: a hard reload of /jobs/<token>/apply sends no
+   application.started in POST /api/public/v1/events; typing one character sends exactly one.
 ````
 
 ## 2026-08-13

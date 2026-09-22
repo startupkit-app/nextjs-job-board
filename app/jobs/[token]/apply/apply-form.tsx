@@ -145,15 +145,21 @@ export function ApplyForm({
     setValues((previous) => ({ ...previous, [inputName]: next }));
   }, []);
 
-  // The first field autofocuses during mount, so that focus isn't the applicant's;
-  // typing into it fires no new focus, hence onInput too. The tracker dedupes per job.
+  // Autofocus isn't the applicant's doing: React focuses during a client-side mount, and
+  // the browser focuses the SSR `autofocus` attribute only after hydration's effects ran.
   const mounted = useRef(false);
   useEffect(() => {
     mounted.current = true;
   }, []);
-  const handleInteraction = useCallback(() => {
-    if (mounted.current) tracker.applicationStarted(token);
-  }, [token]);
+  const handleFocus = useCallback(
+    (event: React.FocusEvent<HTMLFormElement>) => {
+      const target = event.target as HTMLElement;
+      if (mounted.current && !target.autofocus) tracker.applicationStarted(token);
+    },
+    [token]
+  );
+  // Typing into the autofocused field fires no new focus event. The tracker dedupes per job.
+  const handleInput = useCallback(() => tracker.applicationStarted(token), [token]);
 
   useEffect(() => {
     if (state.status === "success") tracker.applicationSubmitted(token);
@@ -199,7 +205,7 @@ export function ApplyForm({
   const turnstileSitekey = form.turnstile.sitekey || process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || null;
 
   return (
-    <form onSubmit={handleSubmit} onFocus={handleInteraction} onInput={handleInteraction} noValidate className="space-y-7">
+    <form onSubmit={handleSubmit} onFocus={handleFocus} onInput={handleInput} noValidate className="space-y-7">
       {state.status === "error" && (
         <div
           ref={summaryRef}

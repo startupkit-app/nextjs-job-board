@@ -121,7 +121,7 @@ hosted portal writes, so every chart fills in unchanged:
 | ----------------------- | ------------------------------------------------------------------- |
 | `job_board.viewed`      | `<TrackJobBoardView />` on the job list                             |
 | `job.viewed`            | `<TrackJobView job={…} />` on the job detail page                   |
-| `application.started`   | first focus or keystroke in the apply form (deduped per job)        |
+| `application.started`   | first keystroke, or focus other than autofocus, in the apply form   |
 | `application.submitted` | the apply form's success state                                      |
 | `talent_pool.joined`    | the talent-pool form's success state                                |
 
