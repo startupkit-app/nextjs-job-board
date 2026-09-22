@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { JobCard } from "@/components/job-card";
 import { JobFilters } from "@/components/job-filters";
+import { TrackJobBoardView } from "@/components/kit-analytics";
 import { SetupNotice } from "@/components/setup-notice";
 import { kit, kitConfigured, type Job, type Pagination as PaginationData } from "@/lib/kit";
 
@@ -44,6 +45,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
 
   return (
     <div className="space-y-6">
+      <TrackJobBoardView />
       <div>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Open roles</h1>
         <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400">

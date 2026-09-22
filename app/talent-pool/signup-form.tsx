@@ -7,6 +7,7 @@ import { Turnstile } from "@/components/turnstile";
 import { talentPoolFieldLabel } from "@/lib/format";
 import type { TalentPoolField, TalentPoolForm } from "@/lib/kit";
 import type { FieldErrors } from "@/lib/kit-errors";
+import { tracker } from "@/lib/kit-tracker";
 import { joinTalentPool, type SignupState } from "./actions";
 
 const INITIAL_STATE: SignupState = { status: "idle" };
@@ -35,6 +36,10 @@ export function SignupForm({ form }: { form: TalentPoolForm }) {
     formElement.querySelector('[role="alert"]')?.scrollIntoView({ behavior: "smooth", block: "center" });
     formElement.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
   }, [state]);
+
+  useEffect(() => {
+    if (state.status === "success") tracker.talentPoolJoined();
+  }, [state.status]);
 
   if (state.status === "success") {
     return <SuccessPanel email={state.email} entryId={state.entryId} />;

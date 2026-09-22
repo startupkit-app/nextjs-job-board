@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { HiringProcess } from "@/components/hiring-process";
+import { TrackJobView } from "@/components/kit-analytics";
 import { Salary } from "@/components/salary";
 import { formatDate, formatEmploymentType } from "@/lib/format";
 import { jobPostingJsonLd, serializeJsonLd } from "@/lib/jsonld";
@@ -53,6 +54,7 @@ export default async function JobPage({ params }: { params: Params }) {
 
   return (
     <article className="space-y-8">
+      <TrackJobView job={job.id} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(jobPostingJsonLd(job)) }}
