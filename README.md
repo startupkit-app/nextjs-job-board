@@ -7,7 +7,7 @@ and instant cache busting via webhooks.
 
 **▶ Live demo: [nextjs-job-board-orcin.vercel.app](https://nextjs-job-board-orcin.vercel.app)** — this template deployed against real Kit job data.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/startupkit-app/nextjs-job-board&env=STARTUPKIT_SECRET_KEY&envDescription=Secret%20API%20key%20from%20Kit%20Settings&envLink=https://startupkit.app/docs/public-jobs-api&demo-title=Kit%20Job%20Board&demo-description=A%20careers%20site%20on%20the%20Kit%20public%20hiring%20API&demo-url=https://nextjs-job-board-orcin.vercel.app)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fstartupkit-app%2Fnextjs-job-board&env=STARTUPKIT_SECRET_KEY&envLink=https%3A%2F%2Fstartupkit.app%2Fdocs%2Fpublic-jobs-api%23api-keys)
 
 ## Features
 
@@ -59,6 +59,25 @@ npm install
 cp .env.example .env.local   # then paste your sk_… key
 npm run dev
 ```
+
+## Customize with an AI coding agent
+
+The repo ships an [AGENTS.md](AGENTS.md) (imported by [CLAUDE.md](CLAUDE.md)) that tells coding
+agents how the site is built, which files to touch for common changes, and which contracts to
+leave alone. To make the site yours:
+
+1. Fork or clone the repo, `npm install`, and put your `sk_…` key in `.env.local`.
+2. Open the folder in [Claude Code](https://claude.com/claude-code) (`claude`) or
+   [Codex](https://openai.com/codex) (`codex`). Both read the agent instructions automatically.
+3. Ask for what you want, for example:
+   - "Use our brand color #0f766e and the Inter font, and put `logo.svg` in the header."
+   - "Add a /team page with our four founders and link it from the header."
+   - "Show the job list as a two-column grid grouped by department."
+   - "Translate the site into German."
+   - "Show the application form directly on each job page."
+4. Check the result with `npm run dev`; the agent runs `npm run lint`, `npm run typecheck` and
+   `npm run build` before it finishes.
+5. Push and deploy with the button above (or redeploy your existing Vercel project).
 
 ## Environment variables
 
