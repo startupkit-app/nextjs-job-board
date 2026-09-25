@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Next.js 16 (App Router) careers-site template on the Kit (startupkit.app) public hiring API, via `@startupkit-app/jobs`. Meant to be forked; keep it dependency-light (no UI kit, minimal `next.config.ts`).
+Next.js App Router careers-site template on the Kit (startupkit.app) public hiring API, via `@startupkit-app/jobs`. Meant to be forked; keep it dependency-light (no UI kit, minimal `next.config.ts`).
 
 ## Commands
 
@@ -8,7 +8,7 @@ Next.js 16 (App Router) careers-site template on the Kit (startupkit.app) public
 - `npm run lint` (eslint, `eslint-config-next` core-web-vitals + typescript)
 - `npm run typecheck` (`tsc --noEmit`)
 - No test script and no GitHub Actions workflow. CI is Dependabot only (`.github/dependabot.yml`, weekly, 7-day cooldown). Run lint and typecheck yourself before calling work done.
-- Engines: node >= 20.19.0, npm >= 11.10.0. `.npmrc` sets `min-release-age=7`; older npm silently ignores it. `@startupkit-app/*` is exempt from the cooldown.
+- `.npmrc` sets `min-release-age=7`; npm below the `engines` floor silently ignores it. `@startupkit-app/*` is exempt from the cooldown.
 - Do not bump `typescript` to 7.0.x or `eslint` to 10.x: both break `npm run lint` through `eslint-config-next`'s nested plugins (see comments in dependabot.yml).
 
 ## Env (`.env.example` -> `.env.local`)
@@ -38,15 +38,14 @@ Next.js 16 (App Router) careers-site template on the Kit (startupkit.app) public
 - Webhook auth is signature-based (`X-Webhook-Signature` HMAC-SHA256 over `<timestamp>.<body>`, 5-minute window), not a bearer token. Read the raw body before parsing.
 - File uploads never hit the Next.js server: browser MD5 -> `createFileUpload` presign -> direct PUT. Do not route file bytes through a Server Action (Vercel 4.5 MB body limit).
 - Talent pool: consent checkbox unchecked by default; Server Action forwards first hop of `x-forwarded-for` as `consent_ip_address`. See `TALENT_POOL.md`.
-- SDK pin is `^0.5.0`; on `0.x` caret does not cross minors, so SDK minor bumps are a deliberate edit in `package.json`.
 - Forms use `useActionState`; API errors map through `lib/kit-errors.ts` (`already_applied`, `already_in_talent_pool`, `consent_required`, `turnstile_failed` have dedicated copy).
 - Analytics fire from the browser only, once per view (ref guard vs StrictMode), submit events on success only. See `ANALYTICS.md`.
-- Tailwind v4 via `@tailwindcss/postcss`; no `tailwind.config` file, theme lives in `app/globals.css`.
+- Tailwind via `@tailwindcss/postcss`; no `tailwind.config` file, theme lives in `app/globals.css`.
 
 ## Docs
 
 - Kit public jobs API: https://startupkit.app/docs/public-jobs-api
 - SDK: `node_modules/@startupkit-app/jobs/README.md` (source: https://github.com/startupkit-app/jobs-js)
-- Next.js 16, version-matched: `node_modules/next/dist/docs/` (`01-app/` for App Router); online at https://nextjs.org/docs
-- Tailwind v4: https://tailwindcss.com/docs
+- Next.js, version-matched: `node_modules/next/dist/docs/` (`01-app/` for App Router); online at https://nextjs.org/docs
+- Tailwind: https://tailwindcss.com/docs
 - Turnstile: https://developers.cloudflare.com/turnstile/
