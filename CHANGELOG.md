@@ -8,6 +8,12 @@ tagged or released to a registry, so entries are grouped by date instead of vers
 
 ### Added
 
+- `AGENTS.md`: instructions for coding agents (Claude Code, Codex, Cursor): commands, env vars,
+  project map, how data flows from the Kit API, recipes for brand colors, fonts, logo, new pages,
+  job list layout, languages and an inline application form, and the rules a change must keep
+  (no secrets, the application POST contract, accessibility, lint/typecheck/build)
+- `CLAUDE.md` containing `@AGENTS.md`, so Claude Code loads the same instructions
+- README: "Customize with an AI coding agent" section with example prompts
 - Kit job analytics, reported from the visitor's browser by the `@startupkit-app/jobs` 0.5
   tracker: `job_board.viewed` and `job.viewed` page views, `application.started` on the first
   keystroke, or focus other than the first field's autofocus, in the apply form,
@@ -169,6 +175,35 @@ added. Apply two fixes from that repo's CHANGELOG (Unreleased → Fixed); change
 3. Run `npm run lint && npm run typecheck && npm run build` and fix any failure.
 4. Tell me to verify in the browser: a hard reload of /jobs/<token>/apply sends no
    application.started in POST /api/public/v1/events; typing one character sends exactly one.
+````
+
+### Upgrade guide: agent instructions for existing forks
+
+Documentation only; no code, dependency or env change. Worth doing before you ask an agent to
+customise your fork, since it steers the agent away from breaking the application contract.
+
+1. Copy `AGENTS.md` and `CLAUDE.md` from this repo into your fork's root.
+2. Edit `AGENTS.md` wherever your fork has diverged: renamed or added files, a different brand
+   color than `indigo-*`, added pages, i18n, extra env vars or scripts.
+3. Optional: add the README's "Customize with an AI coding agent" section.
+4. Verify: every file path and npm script named in `AGENTS.md` exists in your fork.
+
+#### Prompt for your AI coding agent
+
+````text
+This site is a fork of github.com/startupkit-app/nextjs-job-board. Add that repo's agent
+instructions to this fork, adapted to how this fork actually looks. Change no code.
+
+1. Fetch the raw AGENTS.md and CLAUDE.md from the main branch of that repo.
+2. Write CLAUDE.md at the repo root with exactly the single line `@AGENTS.md`. If a CLAUDE.md
+   already exists, keep its content and add that line at the top instead.
+3. Write AGENTS.md at the repo root, then check every claim against this fork and fix the ones
+   that differ: the npm scripts in package.json, the env vars in .env.example, the paths in the
+   project map and the recipes, the accent color class (grep for `indigo-`), whether i18n or a
+   public/ directory exists, and any pages or API calls this fork added. Do not invent scripts,
+   files or env vars. Keep the Rules section as is unless this fork deliberately changed one of
+   those contracts, and then say so there.
+4. Report which sections you changed and why.
 ````
 
 ## 2026-08-13
