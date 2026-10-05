@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useId } from "react";
 import { formatEmploymentType } from "@/lib/format";
+import { withJobAttribution } from "@/lib/job-paths";
 
 /**
  * Filter bar driven entirely by URL search params, so filtered views are
@@ -78,7 +79,7 @@ export function JobFilters({
       {hasFilters && (
         <button
           type="button"
-          onClick={() => router.replace(pathname, { scroll: false })}
+          onClick={() => router.replace(withJobAttribution(pathname, new URLSearchParams(searchParams)), { scroll: false })}
           className="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
         >
           Clear filters

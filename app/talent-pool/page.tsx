@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { JobLink } from "@/components/job-link";
 import { notFound } from "next/navigation";
 import { SetupNotice } from "@/components/setup-notice";
 import { kitConfigured } from "@/lib/kit";
@@ -36,12 +36,12 @@ export default async function TalentPoolPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <Link
+      <JobLink
         href="/"
         className="text-sm font-medium text-zinc-500 hover:text-indigo-600 dark:text-zinc-400 dark:hover:text-indigo-400"
       >
         ← Back to open roles
-      </Link>
+      </JobLink>
 
       <h1 className="mt-4 text-2xl font-bold tracking-tight">Join our talent pool</h1>
       <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400">
@@ -79,12 +79,12 @@ export default async function TalentPoolPage() {
               We&apos;re not taking new talent-pool signups at the moment. Our open roles are still
               accepting applications.
             </p>
-            <Link
+            <JobLink
               href="/"
               className="mt-5 inline-block rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
             >
               Browse open roles
-            </Link>
+            </JobLink>
           </div>
         )}
       </div>

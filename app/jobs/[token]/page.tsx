@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { HiringProcess } from "@/components/hiring-process";
 import { JobLink } from "@/components/job-link";
@@ -63,12 +62,12 @@ export default async function JobPage({ params }: { params: Params }) {
       />
 
       <div>
-        <Link
+        <JobLink
           href="/"
           className="text-sm font-medium text-zinc-500 hover:text-indigo-600 dark:text-zinc-400 dark:hover:text-indigo-400"
         >
           ← All open roles
-        </Link>
+        </JobLink>
 
         <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>

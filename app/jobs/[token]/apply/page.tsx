@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { fetchJob } from "@/lib/jobs";
 import { JobLink } from "@/components/job-link";
@@ -50,12 +49,12 @@ export default async function ApplyPage({ params }: { params: Params }) {
               This role is no longer accepting applications. Take a look at the other positions
               that are still open.
             </p>
-            <Link
+            <JobLink
               href="/"
               className="mt-5 inline-block rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
             >
               Browse open roles
-            </Link>
+            </JobLink>
           </div>
         )}
       </div>

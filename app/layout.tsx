@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { JobLink } from "@/components/job-link";
 import "./globals.css";
 
 const companyName = process.env.NEXT_PUBLIC_COMPANY_NAME || "Our company";
@@ -25,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
           <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4 sm:px-6">
-            <Link href="/" className="flex items-center gap-2.5">
+            <JobLink href="/" className="flex items-center gap-2.5">
               <span
                 aria-hidden="true"
                 className="flex size-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white"
@@ -35,13 +35,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <span className="text-sm font-semibold tracking-tight">
                 {companyName} <span className="font-normal text-zinc-500 dark:text-zinc-400">Careers</span>
               </span>
-            </Link>
-            <Link
+            </JobLink>
+            <JobLink
               href="/"
               className="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
             >
               Open roles
-            </Link>
+            </JobLink>
           </div>
         </header>
 

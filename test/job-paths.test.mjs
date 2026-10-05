@@ -15,3 +15,9 @@ test("campaign context survives detail → apply without redirect controls", () 
   assert.equal(withJobAttribution(jobPath("abc123"), new URLSearchParams()), "/jobs/abc123");
   assert.equal(withJobAttribution(jobPath("abc123"), new URLSearchParams("utm_source=")), "/jobs/abc123");
 });
+
+test("returning to the list or clearing filters retains only campaign context", () => {
+  const source = new URLSearchParams("department=Engineering&page=3&remote=true&utm_source=board&locale=de");
+  assert.equal(withJobAttribution("/", source), "/?utm_source=board&locale=de");
+  assert.equal(withJobAttribution("/careers", source), "/careers?utm_source=board&locale=de");
+});
