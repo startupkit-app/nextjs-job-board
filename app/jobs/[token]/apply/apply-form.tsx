@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { JobLink } from "@/components/job-link";
 import {
   startTransition,
   useActionState,
@@ -670,12 +670,12 @@ function SuccessPanel({ jobTitle, applicationId }: { jobTitle: string; applicati
       <p className="mt-2 text-xs text-emerald-700 dark:text-emerald-300">
         Reference: <code className="font-mono">{applicationId}</code>
       </p>
-      <Link
+      <JobLink
         href="/"
         className="mt-6 inline-block rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
       >
         Back to open roles
-      </Link>
+      </JobLink>
     </div>
   );
 }
