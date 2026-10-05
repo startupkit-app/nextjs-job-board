@@ -1,12 +1,13 @@
-import Link from "next/link";
+import { JobLink } from "@/components/job-link";
+import { jobPath } from "@/lib/job-paths";
 import { Salary } from "@/components/salary";
 import { formatDate, formatEmploymentType } from "@/lib/format";
 import type { Job } from "@/lib/kit";
 
 export function JobCard({ job }: { job: Job }) {
   return (
-    <Link
-      href={`/jobs/${job.id}`}
+    <JobLink
+      href={jobPath(job.id)}
       className="group block rounded-xl border border-zinc-200 bg-white p-5 shadow-sm transition hover:border-indigo-300 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-indigo-700"
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -37,6 +38,6 @@ export function JobCard({ job }: { job: Job }) {
           </p>
         </div>
       </div>
-    </Link>
+    </JobLink>
   );
 }

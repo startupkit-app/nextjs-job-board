@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { fetchJob } from "@/lib/jobs";
+import { JobLink } from "@/components/job-link";
+import { jobPath } from "@/lib/job-paths";
 import { ApplyForm } from "./apply-form";
 
 export const revalidate = 300;
@@ -25,12 +27,12 @@ export default async function ApplyPage({ params }: { params: Params }) {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <Link
-        href={`/jobs/${job.id}`}
+      <JobLink
+        href={jobPath(job.id)}
         className="text-sm font-medium text-zinc-500 hover:text-indigo-600 dark:text-zinc-400 dark:hover:text-indigo-400"
       >
         ← Back to job description
-      </Link>
+      </JobLink>
 
       <h1 className="mt-4 text-2xl font-bold tracking-tight">Apply for {job.title}</h1>
       <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400">

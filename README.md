@@ -72,6 +72,15 @@ npm run dev
 | `KIT_WEBHOOK_SIGNING_SECRET`     | No       | Signing secret of the Kit webhook endpoint targeting `POST /api/revalidate` |
 | `NEXT_PUBLIC_COMPANY_NAME`       | No       | Company name for the header, titles, and JobPosting structured data         |
 
+## Connect your external careers site to Kit
+
+Keep job descriptions at `/jobs/:public_token`, using `job.id` from the public API.
+In Kit's Career Portal settings, set this deployment as your external careers homepage and
+enable external job pages after verifying a live job URL. Kit's distributed job links then
+send visitors to the matching page on your site and retain campaign attribution.
+See [CAREERS_URLS.md](CAREERS_URLS.md) for the fixed route contract, nested deployments,
+application behavior and verification steps.
+
 ## How freshness works (ISR + webhooks)
 
 All API reads go through Next.js' data cache:

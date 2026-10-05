@@ -8,6 +8,11 @@ tagged or released to a registry, so entries are grouped by date instead of vers
 
 ### Added
 
+- `CAREERS_URLS.md`: fixed `/jobs/:public_token` contract for Kit external job-page redirects,
+  including nested deployments, opt-in configuration and application behavior
+- Shared encoded job routes and `JobLink` to retain campaign UTM parameters and locale
+  between job listings, descriptions and application forms without disabling ISR
+
 - Kit job analytics, reported from the visitor's browser by the `@startupkit-app/jobs` 0.5
   tracker: `job_board.viewed` and `job.viewed` page views, `application.started` on the first
   keystroke, or focus other than the first field's autofocus, in the apply form,
