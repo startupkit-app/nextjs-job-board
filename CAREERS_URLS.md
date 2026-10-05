@@ -29,10 +29,14 @@ Deploy and verify a real `/jobs/<public_token>` page first. In **Hiring → Care
 choose the external careers homepage, enter its URL, and enable external job pages.
 Homepage redirection alone does not enable job redirection.
 
-Kit's job-board distribution and feeds share a Kit job URL with `destination=careers`.
+Kit's syndication feeds share a Kit job URL with `destination=careers`.
 When external job pages are enabled, opening that link sends the visitor to the matching
 external `/jobs/:public_token` page. Without the opt-in, it opens the Kit job page. This
 lets an existing distributed link follow your current portal settings.
+
+Application-only job-board links continue to point directly to Kit's application flow.
+For example, OneEmployer's application URL stays on Kit rather than redirecting to an
+external job description.
 
 Kit forwards campaign UTM parameters and `locale`. The `destination` parameter is a Kit
 routing control: do not copy it into your own links, and do not link your description page
