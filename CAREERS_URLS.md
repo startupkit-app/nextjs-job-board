@@ -64,5 +64,9 @@ for forks with localized pages; this template's interface remains English.
 4. Disable external job pages and confirm the same Kit link displays Kit's job page.
 5. Check unknown and unpublished tokens show a missing-job page, not the homepage.
 
-For local route checks, run `node --test test/job-paths.test.mjs` on Node 22.18 or newer
-(native TypeScript stripping), plus `npm run lint`, `npm run typecheck` and `npm run build`.
+For local route checks, run `npm test` on Node 22.18 or newer (native TypeScript stripping),
+plus `npm run lint`, `npm run typecheck` and `npm run build`. For browser regression coverage,
+install Chromium with `npx playwright install chromium` and run `npm run test:browser`.
+It verifies campaign navigation through job browsing, filter clearing, application submission,
+talent-pool signup and missing-job recovery against a local fixture API, both at the root and
+under `/careers`. No real Kit API key or customer data is required.

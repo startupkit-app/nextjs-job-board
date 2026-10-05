@@ -7,7 +7,9 @@ Next.js App Router careers-site template on the Kit (startupkit.app) public hiri
 - `npm run dev` / `npm run build` / `npm run start`
 - `npm run lint` (eslint, `eslint-config-next` core-web-vitals + typescript)
 - `npm run typecheck` (`tsc --noEmit`)
-- No test script and no GitHub Actions workflow. CI is Dependabot only (`.github/dependabot.yml`, weekly, 7-day cooldown). Run lint and typecheck yourself before calling work done.
+- `npm test` runs route/attribution helpers (Node 22.18+; Node 24 in CI).
+- `npm run test:browser` builds the actual app with a local fixture API, then runs native Playwright against root and `/careers` deployments. Install Chromium once with `npx playwright install chromium`. No real API key or customer data is used. The harness excludes `.env*` files and overrides SDK/analytics/Turnstile configuration.
+- `.github/workflows/browser.yml` runs lint, typecheck, helper tests and browser regressions on PRs/main. Dependabot updates dependencies weekly with a 7-day cooldown.
 - `.npmrc` sets `min-release-age=7`; npm below the `engines` floor silently ignores it. `@startupkit-app/*` is exempt from the cooldown.
 - Do not bump `typescript` to 7.0.x or `eslint` to 10.x: both break `npm run lint` through `eslint-config-next`'s nested plugins (see comments in dependabot.yml).
 

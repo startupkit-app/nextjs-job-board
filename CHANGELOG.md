@@ -8,6 +8,10 @@ tagged or released to a registry, so entries are grouped by date instead of vers
 
 ### Added
 
+- Native Playwright campaign-navigation regressions against a local fixture API, covering
+  browsing/filter clearing, application and talent-pool success returns, and missing-job
+  recovery in production builds at both `/` and `/careers`; GitHub Actions runs them on PRs/main
+
 - `CAREERS_URLS.md`: fixed `/jobs/:public_token` contract for Kit external job-page redirects,
   including nested deployments, opt-in configuration and application behavior
 - Shared encoded job routes and `JobLink` to retain campaign UTM parameters and locale

@@ -229,7 +229,15 @@ npm run build       # production build
 npm run start       # serve the production build
 npm run lint        # eslint
 npm run typecheck   # tsc --noEmit
+npm test            # route/attribution helpers (Node 22.18+)
+npm run test:browser # production browser regressions, mocked API only
 ```
+
+For browser tests, install Chromium once with `npx playwright install chromium`.
+The harness copies the app into an ignored temporary workspace, builds it against a local
+fixture API, and checks the candidate flow both at `/` and with Next.js `basePath: "/careers"`.
+It preserves your app and deployment configuration, excludes `.env*` files, and uses only
+fixture applicants. GitHub Actions runs these checks on pull requests and `main` with Node 24.
 
 ## Changelog
 
