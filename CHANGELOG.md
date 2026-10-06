@@ -8,6 +8,24 @@ tagged or released to a registry, so entries are grouped by date instead of vers
 
 ### Added
 
+- `lib/format.ts` `formatJobLocation`: the API's `location_display` label, falling back to
+  `location` on a Kit server that predates the field
+- JSON-LD `jobLocation.address` built from `city` / `region` / `country_code` when the API sends
+  them, and `applicantLocationRequirements` (named `Country` entries, `EU` expanded to the 27
+  member states) from `remote_regions` next to `jobLocationType: "TELECOMMUTE"`. Jobs without
+  the new fields produce the same JSON-LD as before
+- `test/jsonld.test.mjs` covering the address and applicant-location output
+
+### Changed
+
+- The job card, job page and apply page show one place label (`location_display`) and no
+  separate "Remote" pill or suffix. `location` is free text typed by the recruiter and often
+  already says "Remote", so the old `location` + "Remote" pairing printed
+  "Remote (Poland) · Remote". The location filter, facets and "Remote only" checkbox are
+  unchanged
+- `@startupkit-app/jobs` dependency raised to `^0.6.0` for `location_display`, the structured
+  location fields and the `locale` parameter
+
 - Native Playwright campaign-navigation regressions against a local fixture API, covering
   browsing/filter clearing, application and talent-pool success returns, and missing-job
   recovery in production builds at both `/` and `/careers`; GitHub Actions runs them on PRs/main
@@ -57,6 +75,114 @@ tagged or released to a registry, so entries are grouped by date instead of vers
   page importing the tracker: Next.js inlines `""`, and `createTracker` in SDK 0.5.0 throws on
   `new URL("…", "")`. `lib/kit-tracker.ts` now passes `|| undefined`, and `.env.example` ships
   the variable commented out
+
+### Upgrade guide: one place label for existing forks
+
+Requires the Kit server release that adds `location_display` to the public jobs API and
+`@startupkit-app/jobs` 0.6.0. Before that server release the field is absent and the pages fall
+back to `location`, exactly as today.
+
+1. `npm i @startupkit-app/jobs@^0.6.0`. A caret on `0.x` does not cross minors, so `^0.5.0`
+   stays on 0.5 by itself.
+2. `lib/format.ts`: add the helper.
+
+   ```ts
+   export function formatJobLocation(job: {
+     location: string | null;
+     location_display?: string | null;
+   }): string | null {
+     return job.location_display ?? job.location;
+   }
+   ```
+
+3. `components/job-card.tsx`: read `const location = formatJobLocation(job);`, render it where
+   `job.location` was, and delete the `job.remote && <span …>Remote</span>` pill.
+
+   ```tsx
+   // Before
+   {job.department && job.location && <span aria-hidden="true">·</span>}
+   {job.location && <span>{job.location}</span>}
+   …
+   {job.remote && <span className="…">Remote</span>}
+
+   // After
+   {job.department && location && <span aria-hidden="true">·</span>}
+   {location && <span>{location}</span>}
+   ```
+
+4. `app/jobs/[token]/page.tsx`: same change on the badge row.
+
+   ```tsx
+   // Before
+   {job.location && <Badge>{job.location}</Badge>}
+   {employmentType && <Badge>{employmentType}</Badge>}
+   {job.remote && <span className="…">Remote</span>}
+
+   // After
+   const location = formatJobLocation(job); // next to employmentType
+   {location && <Badge>{location}</Badge>}
+   {employmentType && <Badge>{employmentType}</Badge>}
+   ```
+
+5. `app/jobs/[token]/apply/page.tsx`: the subtitle.
+
+   ```tsx
+   // Before
+   {[job.department, job.location].filter(Boolean).join(" · ")}
+   {job.remote && " · Remote"}
+
+   // After
+   {[job.department, formatJobLocation(job)].filter(Boolean).join(" · ")}
+   ```
+
+6. `lib/jsonld.ts` (optional, Google for Jobs): replace the `jobLocation` block with the
+   `postalAddress` / `applicantLocationRequirements` helpers from this repo's `lib/jsonld.ts`,
+   or copy the file. `city` → `addressLocality`, `region` → `addressRegion`, `country_code` →
+   `addressCountry`; `remote_regions` → `applicantLocationRequirements` with `"EU"` expanded.
+7. Leave `app/page.tsx` facets, `components/job-filters.tsx` and the "Remote only" checkbox
+   alone: they use `location` and `remote`, which did not change.
+8. Verify: `npm run lint && npm run typecheck && npm test && npm run build`. Against a Kit server
+   on the matching release, a job that is both in a city and remote shows the place once, e.g.
+   "Poznań, Poland · Remote (Poland, EU)", on the list, the job page and the apply page, with no
+   separate Remote pill. Against an older server the pages show `location` as before.
+
+#### Prompt for your AI coding agent
+
+````text
+This site is a fork of github.com/startupkit-app/nextjs-job-board. Apply the "one place label"
+change from that repo's CHANGELOG (Unreleased → Upgrade guide: one place label); change nothing
+else.
+
+1. Run `npm i @startupkit-app/jobs@^0.6.0` and confirm package.json has a range that includes
+   0.6.0 and the lockfile resolves 0.6.0 or later.
+2. Background: every job from the SDK now has `location_display: string | null`, a finished
+   place label with each part said once ("Poznań, Poland · Remote (Poland, EU)", "Berlin",
+   "Remote", or null when the job has neither). `location` is the recruiter's free text, which
+   often already contains "Remote", and `remote` is a boolean; joining them prints
+   "Remote (Poland) · Remote". Do not add any text-matching that tries to dedupe "Remote".
+3. In lib/format.ts add
+   `export function formatJobLocation(job: { location: string | null; location_display?: string | null }): string | null { return job.location_display ?? job.location; }`.
+   The fallback exists only for a Kit server that has not shipped the field.
+4. In components/job-card.tsx, app/jobs/[token]/page.tsx and app/jobs/[token]/apply/page.tsx
+   (or this fork's equivalents, plus any other place that renders where a job is, such as meta
+   descriptions or share text), render `formatJobLocation(job)` where `job.location` was and
+   delete the separate "Remote" pill, badge or " · Remote" suffix that sat next to it.
+5. In lib/jsonld.ts: when `job.city`, `job.region` or `job.country_code` is present, build
+   `jobLocation.address` as `{ "@type": "PostalAddress", addressLocality: city, addressRegion:
+   region, addressCountry: country_code }` with absent keys omitted; otherwise keep the existing
+   `addressLocality: job.location` fallback. When `job.remote` and `job.remote_regions` is
+   non-empty, add `applicantLocationRequirements`: one `{ "@type": "Country", name }` per code,
+   names from `new Intl.DisplayNames(["en"], { type: "region" })`, with the literal "EU"
+   expanded to the 27 member-state codes and duplicates removed. Keep
+   `jobLocationType: "TELECOMMUTE"` as it is.
+6. Do not change app/page.tsx facets, components/job-filters.tsx or the "Remote only"
+   checkbox: they use `location` and `remote`, which are unchanged.
+7. Run `npm run lint && npm run typecheck && npm test && npm run build` and fix any failure.
+8. Tell me to verify in the browser against a Kit server on the matching release: a job that is
+   both in a city and remote shows its place exactly once on the list, the job page and the
+   apply page, with no extra Remote pill; a job with no location renders nothing broken where
+   the place would be.
+````
 
 ### Upgrade guide: job analytics for existing forks
 

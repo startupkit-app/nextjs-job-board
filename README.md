@@ -158,7 +158,7 @@ so the key can never be bundled into a client component.
 [`lib/kit-tracker.ts`](lib/kit-tracker.ts) is the one other import: the browser-side analytics
 tracker, which only ever sees the publishable key.
 
-The dependency is pinned as `^0.5.0`. A caret on a `0.x` version does not cross minor releases,
+The dependency is pinned as `^0.6.0`. A caret on a `0.x` version does not cross minor releases,
 so picking up a new SDK minor is always a deliberate edit here rather than something `npm install`
 does on its own — worth knowing when the API grows a field the template wants to read.
 
@@ -185,6 +185,13 @@ On job details, hiring stages may include an optional
 one-time payment** after completion, separately from the job's recurring salary. Older API
 responses that omit `compensation` render exactly as before. This template consumes that field
 through `@startupkit-app/jobs` 0.4 or newer.
+
+Where a job is comes from `location_display`, the API's finished label with each part said once
+("Poznań, Poland · Remote (Poland, EU)", "Berlin", "Remote"). `location` is the recruiter's free
+text, which often already says "Remote", so the template never joins it with the `remote` flag;
+both still drive the filters. `city`, `region`, `country_code` and `remote_regions` feed the
+JSON-LD `jobLocation` and `applicantLocationRequirements`. Older API responses that omit these
+fields fall back to `location`. SDK 0.6 or newer.
 
 ## Project structure
 

@@ -29,6 +29,14 @@ const SALARY_UNITS: Record<string, string> = {
   annual: "YEAR",
 };
 
+/** The API sends the literal "EU" for "any member state"; schema.org wants countries. */
+const EU_MEMBER_STATES = [
+  "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE",
+  "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE",
+];
+
+const countryNames = new Intl.DisplayNames(["en"], { type: "region" });
+
 /**
  * Builds a schema.org JobPosting object (Google for Jobs compatible) from a
  * job detail response.
@@ -56,13 +64,14 @@ export function jobPostingJsonLd(job: JobDetail): Record<string, unknown> {
 
   if (job.remote) {
     jsonLd.jobLocationType = "TELECOMMUTE";
+    if (job.remote_regions?.length) {
+      jsonLd.applicantLocationRequirements = applicantLocationRequirements(job.remote_regions);
+    }
   }
 
-  if (job.location) {
-    jsonLd.jobLocation = {
-      "@type": "Place",
-      address: { "@type": "PostalAddress", addressLocality: job.location },
-    };
+  const address = postalAddress(job);
+  if (address) {
+    jsonLd.jobLocation = { "@type": "Place", address };
   }
 
   if (job.salary && (job.salary.min != null || job.salary.max != null)) {
@@ -82,6 +91,23 @@ export function jobPostingJsonLd(job: JobDetail): Record<string, unknown> {
   }
 
   return jsonLd;
+}
+
+function postalAddress(job: JobDetail): Record<string, string> | null {
+  if (job.city || job.region || job.country_code) {
+    const address: Record<string, string> = { "@type": "PostalAddress" };
+    if (job.city) address.addressLocality = job.city;
+    if (job.region) address.addressRegion = job.region;
+    if (job.country_code) address.addressCountry = job.country_code;
+    return address;
+  }
+  if (job.location) return { "@type": "PostalAddress", addressLocality: job.location };
+  return null;
+}
+
+function applicantLocationRequirements(regions: string[]): Array<Record<string, string>> {
+  const codes = new Set(regions.flatMap((code) => (code === "EU" ? EU_MEMBER_STATES : [code])));
+  return Array.from(codes, (code) => ({ "@type": "Country", name: countryNames.of(code) ?? code }));
 }
 
 /**
