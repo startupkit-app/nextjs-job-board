@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { EmptyState } from "@/components/empty-state";
+import { JobLink } from "@/components/job-link";
 import { JobCard } from "@/components/job-card";
 import { JobFilters } from "@/components/job-filters";
 import { TrackJobBoardView } from "@/components/kit-analytics";
@@ -53,12 +54,12 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
             ? "No open positions right now."
             : `${pagination.total_count} open ${pagination.total_count === 1 ? "position" : "positions"}.`}
         </p>
-        <Link
+        <JobLink
           href="/talent-pool"
           className="mt-2 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
         >
           Nothing that fits? Join our talent pool →
-        </Link>
+        </JobLink>
       </div>
 
       <Suspense>
@@ -80,19 +81,19 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           action={
             <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
               {hasFilters && (
-                <Link
+                <JobLink
                   href="/"
                   className="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
                 >
                   Clear all filters
-                </Link>
+                </JobLink>
               )}
-              <Link
+              <JobLink
                 href="/talent-pool"
                 className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
               >
                 Join our talent pool
-              </Link>
+              </JobLink>
             </div>
           }
         />

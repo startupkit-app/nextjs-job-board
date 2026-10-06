@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { HiringProcess } from "@/components/hiring-process";
+import { JobLink } from "@/components/job-link";
 import { TrackJobView } from "@/components/kit-analytics";
 import { Salary } from "@/components/salary";
 import { formatDate, formatEmploymentType } from "@/lib/format";
 import { jobPostingJsonLd, serializeJsonLd } from "@/lib/jsonld";
 import { fetchJob } from "@/lib/jobs";
 import { kit } from "@/lib/kit";
+import { jobApplyPath } from "@/lib/job-paths";
 
 // ISR: pages regenerate at most every 5 minutes; the /api/revalidate webhook
 // (tags "jobs" / "job-<token>") can bust them instantly.
@@ -61,12 +62,12 @@ export default async function JobPage({ params }: { params: Params }) {
       />
 
       <div>
-        <Link
+        <JobLink
           href="/"
           className="text-sm font-medium text-zinc-500 hover:text-indigo-600 dark:text-zinc-400 dark:hover:text-indigo-400"
         >
           ← All open roles
-        </Link>
+        </JobLink>
 
         <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -115,12 +116,12 @@ function ApplyButton({ token, accepting }: { token: string; accepting: boolean }
     );
   }
   return (
-    <Link
-      href={`/jobs/${token}/apply`}
+    <JobLink
+      href={jobApplyPath(token)}
       className="inline-flex shrink-0 items-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
     >
       Apply for this role
-    </Link>
+    </JobLink>
   );
 }
 

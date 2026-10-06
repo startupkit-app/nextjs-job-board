@@ -7,7 +7,9 @@ Next.js App Router careers-site template on the Kit (startupkit.app) public hiri
 - `npm run dev` / `npm run build` / `npm run start`
 - `npm run lint` (eslint, `eslint-config-next` core-web-vitals + typescript)
 - `npm run typecheck` (`tsc --noEmit`)
-- No test script and no GitHub Actions workflow. CI is Dependabot only (`.github/dependabot.yml`, weekly, 7-day cooldown). Run lint and typecheck yourself before calling work done.
+- `npm test` runs route/attribution helpers (Node 22.18+; Node 24 in CI).
+- `npm run test:browser` builds the actual app with a local fixture API, then runs native Playwright against root and `/careers` deployments. Install Chromium once with `npx playwright install chromium`. No real API key or customer data is used. The harness excludes `.env*` files and overrides SDK/analytics/Turnstile configuration.
+- `.github/workflows/browser.yml` runs lint, typecheck, helper tests and browser regressions on PRs/main. Dependabot updates dependencies weekly with a 7-day cooldown.
 - `.npmrc` sets `min-release-age=7`; npm below the `engines` floor silently ignores it. `@startupkit-app/*` is exempt from the cooldown.
 - Do not bump `typescript` to 7.0.x or `eslint` to 10.x: both break `npm run lint` through `eslint-config-next`'s nested plugins (see comments in dependabot.yml).
 
@@ -31,6 +33,8 @@ Next.js App Router careers-site template on the Kit (startupkit.app) public hiri
 - Path alias `@/*` -> repo root.
 
 ## Conventions and gotchas
+
+- External careers routing contract: keep `/jobs/[token]` keyed by the API's `job.id` public token; see `CAREERS_URLS.md`. Use `lib/job-paths.ts` for encoded routes and `JobLink` for job/apply navigation that preserves allowlisted campaign parameters. Public Kit job URLs follow the external-job setting; linking back to a hosted Kit description requires `destination=kit` to avoid a redirect loop. Kit's dedicated `/:public_token/apply` URL stays on Kit; this template's `/jobs/:public_token/apply` form stays local. With a Next.js `basePath`, do not hard-code that prefix in these helpers.
 
 - The secret key must never reach the browser. Anything touching `kit` or `process.env.STARTUPKIT_SECRET_KEY` stays in Server Components, Server Actions, or a `server-only` module. Do not add SDK imports elsewhere, and never put the `sk_` key in `lib/kit-tracker.ts`.
 - API HTML (`description_html`, `consent_disclosure_html`, `consent.disclosure_html`) is sanitized with `sanitize-html` in the fetchers (`lib/jobs.ts`, `lib/talent-pool.ts`) before it reaches any render site. If you add a new HTML field from the API, sanitize it there, not in the component.

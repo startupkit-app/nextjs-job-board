@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { JobLink } from "@/components/job-link";
 import { useActionState, useEffect, useId, useRef } from "react";
 import { FileUpload } from "@/components/file-upload";
 import { Turnstile } from "@/components/turnstile";
@@ -232,12 +232,12 @@ function SuccessPanel({ email, entryId }: { email: string; entryId: string }) {
       <p className="mt-2 text-xs text-emerald-700 dark:text-emerald-300">
         Reference: <code className="font-mono">{entryId}</code>
       </p>
-      <Link
+      <JobLink
         href="/"
         className="mt-6 inline-block rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
       >
         Back to open roles
-      </Link>
+      </JobLink>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { JobLink } from "@/components/job-link";
 
 export default function NotFound() {
   return (
@@ -9,12 +9,12 @@ export default function NotFound() {
         This role may have been filled or unpublished. Take a look at the positions that are still
         open.
       </p>
-      <Link
+      <JobLink
         href="/"
         className="mt-6 inline-block rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
       >
         Browse open roles
-      </Link>
+      </JobLink>
     </div>
   );
 }

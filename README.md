@@ -72,6 +72,16 @@ npm run dev
 | `KIT_WEBHOOK_SIGNING_SECRET`     | No       | Signing secret of the Kit webhook endpoint targeting `POST /api/revalidate` |
 | `NEXT_PUBLIC_COMPANY_NAME`       | No       | Company name for the header, titles, and JobPosting structured data         |
 
+## Connect your external careers site to Kit
+
+Keep job descriptions at `/jobs/:public_token`, using `job.id` from the public API.
+In Kit's Career Portal settings, set this deployment as your external careers homepage and
+enable external job pages after verifying a live job URL. Public Kit job links then
+send visitors to the matching page on your site and retain campaign attribution.
+Explicit `destination=kit` links and Kit's dedicated application URLs stay on Kit.
+See [CAREERS_URLS.md](CAREERS_URLS.md) for the fixed route contract, nested deployments,
+application behavior and verification steps.
+
 ## How freshness works (ISR + webhooks)
 
 All API reads go through Next.js' data cache:
@@ -220,7 +230,15 @@ npm run build       # production build
 npm run start       # serve the production build
 npm run lint        # eslint
 npm run typecheck   # tsc --noEmit
+npm test            # route/attribution helpers (Node 22.18+)
+npm run test:browser # production browser regressions, mocked API only
 ```
+
+For browser tests, install Chromium once with `npx playwright install chromium`.
+The harness copies the app into an ignored temporary workspace, builds it against a local
+fixture API, and checks the candidate flow both at `/` and with Next.js `basePath: "/careers"`.
+It preserves your app and deployment configuration, excludes `.env*` files, and uses only
+fixture applicants. GitHub Actions runs these checks on pull requests and `main` with Node 24.
 
 ## Changelog
 
