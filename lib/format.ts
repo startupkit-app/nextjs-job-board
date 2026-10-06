@@ -22,6 +22,17 @@ export function formatEmploymentType(value: string | null | undefined): string |
   return EMPLOYMENT_TYPE_LABELS[value] ?? humanize(value);
 }
 
+/**
+ * The API's finished place label ("Poznań, Poland · Remote (Poland, EU)"), which
+ * already says "Remote" when it applies. Kit servers before SDK 0.6.0 omit it.
+ */
+export function formatJobLocation(job: {
+  location: string | null;
+  location_display?: string | null;
+}): string | null {
+  return job.location_display ?? job.location;
+}
+
 const TALENT_POOL_FIELD_LABELS: Record<string, string> = {
   email: "Email",
   linkedin_url: "LinkedIn profile",

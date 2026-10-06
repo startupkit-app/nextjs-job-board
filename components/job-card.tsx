@@ -1,10 +1,12 @@
 import { JobLink } from "@/components/job-link";
 import { jobPath } from "@/lib/job-paths";
 import { Salary } from "@/components/salary";
-import { formatDate, formatEmploymentType } from "@/lib/format";
+import { formatDate, formatEmploymentType, formatJobLocation } from "@/lib/format";
 import type { Job } from "@/lib/kit";
 
 export function JobCard({ job }: { job: Job }) {
+  const location = formatJobLocation(job);
+
   return (
     <JobLink
       href={jobPath(job.id)}
@@ -17,16 +19,11 @@ export function JobCard({ job }: { job: Job }) {
           </h2>
           <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm text-zinc-600 dark:text-zinc-400">
             {job.department && <span>{job.department}</span>}
-            {job.department && job.location && <span aria-hidden="true">·</span>}
-            {job.location && <span>{job.location}</span>}
+            {job.department && location && <span aria-hidden="true">·</span>}
+            {location && <span>{location}</span>}
             {job.employment_type && (
               <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
                 {formatEmploymentType(job.employment_type)}
-              </span>
-            )}
-            {job.remote && (
-              <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                Remote
               </span>
             )}
           </div>

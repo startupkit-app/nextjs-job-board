@@ -4,7 +4,7 @@ import { HiringProcess } from "@/components/hiring-process";
 import { JobLink } from "@/components/job-link";
 import { TrackJobView } from "@/components/kit-analytics";
 import { Salary } from "@/components/salary";
-import { formatDate, formatEmploymentType } from "@/lib/format";
+import { formatDate, formatEmploymentType, formatJobLocation } from "@/lib/format";
 import { jobPostingJsonLd, serializeJsonLd } from "@/lib/jsonld";
 import { fetchJob } from "@/lib/jobs";
 import { kit } from "@/lib/kit";
@@ -52,6 +52,7 @@ export default async function JobPage({ params }: { params: Params }) {
   if (!job) notFound();
 
   const employmentType = formatEmploymentType(job.employment_type);
+  const location = formatJobLocation(job);
 
   return (
     <article className="space-y-8">
@@ -74,13 +75,8 @@ export default async function JobPage({ params }: { params: Params }) {
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{job.title}</h1>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
               {job.department && <Badge>{job.department}</Badge>}
-              {job.location && <Badge>{job.location}</Badge>}
+              {location && <Badge>{location}</Badge>}
               {employmentType && <Badge>{employmentType}</Badge>}
-              {job.remote && (
-                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                  Remote
-                </span>
-              )}
             </div>
             <div className="mt-3 space-y-0.5 text-sm text-zinc-600 dark:text-zinc-400">
               <Salary salary={job.salary} className="font-medium text-zinc-900 dark:text-zinc-100" />

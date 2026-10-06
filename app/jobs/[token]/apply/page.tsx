@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { fetchJob } from "@/lib/jobs";
+import { formatJobLocation } from "@/lib/format";
 import { JobLink } from "@/components/job-link";
 import { jobPath } from "@/lib/job-paths";
 import { ApplyForm } from "./apply-form";
@@ -35,8 +36,7 @@ export default async function ApplyPage({ params }: { params: Params }) {
 
       <h1 className="mt-4 text-2xl font-bold tracking-tight">Apply for {job.title}</h1>
       <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400">
-        {[job.department, job.location].filter(Boolean).join(" · ")}
-        {job.remote && " · Remote"}
+        {[job.department, formatJobLocation(job)].filter(Boolean).join(" · ")}
       </p>
 
       <div className="mt-8">
