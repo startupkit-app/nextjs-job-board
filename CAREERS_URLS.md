@@ -36,7 +36,7 @@ current portal settings. Older `destination=careers` links continue to work the 
 
 Add `destination=kit` to a Kit job URL when you explicitly want the hosted Kit description.
 Kit's dedicated `/:public_token/apply` URL always opens its application flow on Kit.
-Legacy Kit links ending in `#apply` are preserved by a browser handoff to that application
+Legacy unmarked Kit links ending in `#apply` are preserved by a browser handoff to that application
 URL. Without JavaScript, the handoff offers links to the external description and the Kit
 application. No hash-handling bridge is needed in this template.
 
