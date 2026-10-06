@@ -34,7 +34,7 @@ Next.js App Router careers-site template on the Kit (startupkit.app) public hiri
 
 ## Conventions and gotchas
 
-- External careers routing contract: keep `/jobs/[token]` keyed by the API's `job.id` public token; see `CAREERS_URLS.md`. Use `lib/job-paths.ts` for encoded routes and `JobLink` for job/apply navigation that preserves allowlisted campaign parameters. Never link a detail page back to a Kit URL marked `destination=careers` (redirect loop). With a Next.js `basePath`, do not hard-code that prefix in these helpers.
+- External careers routing contract: keep `/jobs/[token]` keyed by the API's `job.id` public token; see `CAREERS_URLS.md`. Use `lib/job-paths.ts` for encoded routes and `JobLink` for job/apply navigation that preserves allowlisted campaign parameters. Public Kit job URLs follow the external-job setting; linking back to a hosted Kit description requires `destination=kit` to avoid a redirect loop. Kit's dedicated `/:public_token/apply` URL stays on Kit; this template's `/jobs/:public_token/apply` form stays local. With a Next.js `basePath`, do not hard-code that prefix in these helpers.
 
 - The secret key must never reach the browser. Anything touching `kit` or `process.env.STARTUPKIT_SECRET_KEY` stays in Server Components, Server Actions, or a `server-only` module. Do not add SDK imports elsewhere, and never put the `sk_` key in `lib/kit-tracker.ts`.
 - API HTML (`description_html`, `consent_disclosure_html`, `consent.disclosure_html`) is sanitized with `sanitize-html` in the fetchers (`lib/jobs.ts`, `lib/talent-pool.ts`) before it reaches any render site. If you add a new HTML field from the API, sanitize it there, not in the component.

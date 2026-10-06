@@ -9,9 +9,11 @@ test("job URLs use the public token as one encoded path segment", () => {
 });
 
 test("campaign context survives detail → apply without redirect controls", () => {
-  const source = new URLSearchParams("utm_source=board&utm_medium=job+ad&utm_campaign=engineering&utm_term=remote&utm_content=posting&locale=pl&destination=careers&redirect=https://evil.example");
-  const href = withJobAttribution(jobApplyPath("abc123"), source);
-  assert.equal(href, "/jobs/abc123/apply?utm_source=board&utm_medium=job+ad&utm_campaign=engineering&utm_term=remote&utm_content=posting&locale=pl");
+  for (const destination of ["kit", "careers"]) {
+    const source = new URLSearchParams(`utm_source=board&utm_medium=job+ad&utm_campaign=engineering&utm_term=remote&utm_content=posting&locale=pl&destination=${destination}&redirect=https://evil.example`);
+    const href = withJobAttribution(jobApplyPath("abc123"), source);
+    assert.equal(href, "/jobs/abc123/apply?utm_source=board&utm_medium=job+ad&utm_campaign=engineering&utm_term=remote&utm_content=posting&locale=pl");
+  }
   assert.equal(withJobAttribution(jobPath("abc123"), new URLSearchParams()), "/jobs/abc123");
   assert.equal(withJobAttribution(jobPath("abc123"), new URLSearchParams("utm_source=")), "/jobs/abc123");
 });

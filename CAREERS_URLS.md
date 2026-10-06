@@ -29,18 +29,26 @@ Deploy and verify a real `/jobs/<public_token>` page first. In **Hiring → Care
 choose the external careers homepage, enter its URL, and enable external job pages.
 Homepage redirection alone does not enable job redirection.
 
-Kit's syndication feeds share a Kit job URL with `destination=careers`.
-When external job pages are enabled, opening that link sends the visitor to the matching
-external `/jobs/:public_token` page. Without the opt-in, it opens the Kit job page. This
-lets an existing distributed link follow your current portal settings.
+When external job pages are enabled, opening a public Kit job URL sends the visitor to
+the matching external `/jobs/:public_token` page. Without the opt-in, it opens the Kit
+job page. Shared links and previously distributed job-description links follow your
+current portal settings. Older `destination=careers` links continue to work the same way.
+
+Add `destination=kit` to a Kit job URL when you explicitly want the hosted Kit description.
+Kit's dedicated `/:public_token/apply` URL always opens its application flow on Kit.
+Legacy Kit links ending in `#apply` are preserved by a browser handoff to that application
+URL. Without JavaScript, the handoff offers links to the external description and the Kit
+application. No hash-handling bridge is needed in this template.
 
 Application-only job-board links continue to point directly to Kit's application flow.
 For example, OneEmployer's application URL stays on Kit rather than redirecting to an
 external job description.
 
 Kit forwards campaign UTM parameters and `locale`. The `destination` parameter is a Kit
-routing control: do not copy it into your own links, and do not link your description page
-back to the marked Kit job URL; that would send visitors straight back here.
+routing control and is not forwarded to the external URL: do not copy it into your own
+local links. Linking your description page
+back to an ordinary Kit job URL would send visitors straight back here; use
+`destination=kit` when a link intentionally opens the hosted Kit description.
 
 ## Applications and attribution
 
@@ -59,10 +67,12 @@ for forks with localized pages; this template's interface remains English.
 
 1. Open a live external job URL directly, with `?utm_source=job-board&utm_campaign=hiring`.
 2. Choose **Apply for this role** and confirm those parameters remain on the form URL.
-3. Open the Kit distributed job link with `destination=careers` and confirm it reaches the
+3. Open the ordinary Kit public job link and confirm it reaches the
    same job, including the configured homepage path prefix.
 4. Disable external job pages and confirm the same Kit link displays Kit's job page.
 5. Check unknown and unpublished tokens show a missing-job page, not the homepage.
+6. With external job pages enabled, check `destination=kit` opens the Kit description
+   and Kit's dedicated application URL opens its application flow.
 
 For local route checks, run `npm test` on Node 22.18 or newer (native TypeScript stripping),
 plus `npm run lint`, `npm run typecheck` and `npm run build`. For browser regression coverage,

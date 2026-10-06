@@ -22,7 +22,7 @@ test.beforeEach(async ({ context, request, baseURL }) => {
 });
 
 test("campaign attribution survives browsing, filter clearing, application and success return", async ({ page, request }) => {
-  await page.goto(`${prefix}/jobs/engineering-token?${campaign}&destination=careers&email=do-not-forward@example.test`);
+  await page.goto(`${prefix}/jobs/engineering-token?${campaign}&destination=kit&email=do-not-forward@example.test`);
   await expect(page.getByRole("heading", { name: "Platform Engineer", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "← All open roles", exact: true }).click();
   await expectCampaign(page, "/");

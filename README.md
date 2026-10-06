@@ -76,8 +76,9 @@ npm run dev
 
 Keep job descriptions at `/jobs/:public_token`, using `job.id` from the public API.
 In Kit's Career Portal settings, set this deployment as your external careers homepage and
-enable external job pages after verifying a live job URL. Kit's syndication feed links then
+enable external job pages after verifying a live job URL. Public Kit job links then
 send visitors to the matching page on your site and retain campaign attribution.
+Explicit `destination=kit` links and Kit's dedicated application URLs stay on Kit.
 See [CAREERS_URLS.md](CAREERS_URLS.md) for the fixed route contract, nested deployments,
 application behavior and verification steps.
 
