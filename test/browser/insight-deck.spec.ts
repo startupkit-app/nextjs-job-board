@@ -33,10 +33,16 @@ const answer = (id: string, value: unknown) => ({
 });
 
 test("optional questions save one card at a time, skip without a request and end on what was saved", async ({ page, request, baseURL }) => {
-  const bodies: Promise<string>[] = [];
-  page.on("response", (response) => {
-    if (response.url().startsWith(baseURL!)) bodies.push(response.text().catch(() => ""));
-  });
+  // Read through route.fetch: response.text() on a streamed Server Action reply comes back empty on CI.
+  const bodies: string[] = [];
+  await page.route(
+    (url) => url.origin === baseURL,
+    async (route) => {
+      const response = await route.fetch({ maxRedirects: 0 });
+      bodies.push(await response.text());
+      await route.fulfill({ response });
+    }
+  );
 
   const deck = await apply(page);
   await expect(deck.getByText("Question 1 of 5")).toBeVisible();
@@ -90,7 +96,7 @@ test("optional questions save one card at a time, skip without a request and end
     answer(city.id, "Kraków"),
   ]);
 
-  const received = (await Promise.all(bodies)).join("\n");
+  const received = bodies.join("\n");
   expect(received).toContain(stack.prompt);
   expect(received).not.toContain(INSIGHT_TOKEN);
   expect(await page.evaluate(() => document.cookie)).not.toContain(INSIGHT_TOKEN);
