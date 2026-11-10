@@ -19,6 +19,18 @@ tagged or released to a registry, so entries are grouped by date instead of vers
 
 ### Added
 
+- Optional questions after apply. When the employer asks candidates a few details in Kit, the apply
+  success screen shows them one card at a time (`app/jobs/[token]/apply/insight-deck.tsx`): every
+  question type, save per card, Skip without a request, Stop here, Review and Change, and Kit's own
+  error message under the question. `submitApplication` keeps the answer token in an httpOnly
+  session cookie per application (`kit_insights_<application id>`) signed with the secret key
+  (`lib/insight-cookie.ts`), and `answerInsight` in `actions.ts` saves each answer only when that
+  signature verifies, with `PATCH /api/public/v1/insight_answers/:id` and the token in the JSON
+  body. Page JavaScript, client state, action arguments and URLs never carry the token, and a
+  planted cookie never reaches Kit. Without questions the success screen is unchanged
+- `lib/insight-answers.ts`: per-type answer values (tags as an array, numbers as typed) and
+  display text, with unit tests; unit tests for the cookie signature; a browser regression for the
+  deck against the fixture API
 - `lib/format.ts` `formatJobLocation`: the API's `location_display` label, falling back to
   `location` on a Kit server that predates the field
 - JSON-LD `jobLocation.address` built from `city` / `region` / `country_code` when the API sends
@@ -29,6 +41,10 @@ tagged or released to a registry, so entries are grouped by date instead of vers
 
 ### Changed
 
+- `@startupkit-app/jobs` dependency raised to `^0.7.0` for `insights` on the apply result and
+  `answerInsight`
+- `npm test` runs under `--conditions=react-server`, so unit tests can import `server-only`
+  modules
 - The job card, job page and apply page show one place label (`location_display`) and no
   separate "Remote" pill or suffix. `location` is free text typed by the recruiter and often
   already says "Remote", so the old `location` + "Remote" pairing printed
@@ -86,6 +102,60 @@ tagged or released to a registry, so entries are grouped by date instead of vers
   page importing the tracker: Next.js inlines `""`, and `createTracker` in SDK 0.5.0 throws on
   `new URL("…", "")`. `lib/kit-tracker.ts` now passes `|| undefined`, and `.env.example` ships
   the variable commented out
+
+### Upgrade guide: optional questions after apply for existing forks
+
+Requires `@startupkit-app/jobs` 0.7.0 and the Kit server release that returns `insights`. Before
+it, `insights` is absent and the success screen renders exactly as today.
+
+1. `npm i @startupkit-app/jobs@^0.7.0`. A caret on `0.x` does not cross minors.
+2. Copy `lib/insight-answers.ts`, `lib/insight-cookie.ts`,
+   `app/jobs/[token]/apply/insight-deck.tsx`, `insight-question-input.tsx`, `answerInsight` +
+   `InsightAnswerState` + `DeckInsights` from `actions.ts`, and `INSIGHT_SAVE_FAILED_MESSAGE` from
+   `lib/kit-errors.ts`; add the `deck-enter` animation from `app/globals.css`.
+3. In `submitApplication`, when `result.insights` has questions, set the
+   `kit_insights_<application id>` cookie to `signInsightToken(result.id, insights.token)`
+   (httpOnly, `sameSite: "strict"`, `secure` in production, no `maxAge`) and return the insights
+   without the token. Render this under the success message:
+   `<InsightDeck applicationId={state.applicationId} insights={state.insights} />`.
+4. `insights.token` answers for the candidate until `expires_at`. It stays in that cookie: never in
+   client state, a Server Action argument, a URL or a log line.
+5. Verify: `npm run lint && npm run typecheck && npm test && npm run test:browser`. Against Kit, on
+   a job that asks questions: apply, answer one, skip one, and the answer shows on the application
+   with the Candidate source.
+
+#### Prompt for your AI coding agent
+
+````text
+This site is a fork of github.com/startupkit-app/nextjs-job-board. Apply the "optional questions
+after apply" change from that repo's CHANGELOG (Unreleased → Upgrade guide: optional questions
+after apply); change nothing else.
+
+1. Run `npm i @startupkit-app/jobs@^0.7.0` and confirm the lockfile resolves 0.7.0 or later.
+2. Background: `kit.apply(...)` may now resolve with `insights: { token, expires_at, questions }`.
+   Each question has an opaque `id`, a `type` (text, textarea, number, boolean, select, date, url,
+   tags, rating), a `prompt` and per type `placeholder`, `choices`, `max`, `max_length`,
+   `max_tags`. For `tags`, `choices` are suggestions; for `select` they are the closed set.
+   `kit.answerInsight({ token, id, value })` saves one answer and returns `{ answer, remaining }`;
+   a 422 throws `KitInsightError` with a `code`.
+3. Port the files listed in step 2 of the guide, adapting styles to this site. Where the apply
+   Server Action succeeds, store `<insights.token>.<mac>` in an httpOnly, sameSite=strict session
+   cookie, secure in production, named per application id, where the mac is base64url
+   HMAC-SHA256 of `<application id>.<insights.token>` keyed with the secret key, and return the
+   insights without the token; the answer Server Action takes `(applicationId, id, value)`,
+   verifies that cookie with a constant-time compare (missing, malformed or a bad mac: report the
+   questions as closed without calling Kit) and calls `answerInsight` with the secret key. The
+   token never reaches page JavaScript, client state, action arguments, a URL or a log.
+4. Behaviour to keep: one question at a time; Skip and an empty Next send nothing; Stop here saves
+   a valid draft and ends; choice cards save on a pointer tap, never on arrow keys; Enter on a tag
+   checkbox never submits; focus moves to the question heading after every move or error; a
+   rejected answer shows Kit's `error.message`; `not_askable` drops the question;
+   `insights_closed` hides the questions and keeps the success message.
+5. Run `npm run lint && npm run typecheck && npm test && npm run build` and fix any failure.
+6. Tell me to verify against a Kit server on the matching release with a job that asks questions:
+   apply, answer one, skip one, and confirm the answer shows on the application in Kit. A job with
+   no questions keeps the current success screen.
+````
 
 ### Upgrade guide: one place label for existing forks
 

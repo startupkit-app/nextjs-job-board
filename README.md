@@ -19,6 +19,11 @@ and instant cache busting via webhooks.
 - **Application form rendered from the API schema** — all 8 field types (text, textarea, file,
   url, select, checkbox, email, phone) and all 3 question types (text, scenario, multiple choice),
   with inline validation errors, character counters, and full keyboard/screen-reader accessibility
+- **Optional questions after apply** — when the employer asks candidates a few details in Kit
+  ("Which city are you based in?"), the success screen shows them one card at a time: every type
+  the API sends, save per card, Skip (sends nothing) and Stop here. The apply action keeps the
+  answer token in an httpOnly session cookie signed with your secret key, so page JavaScript,
+  client state, action arguments and URLs never carry it
 - **Direct-to-storage resume uploads** — the browser computes an MD5 checksum, a Server Action
   presigns the upload with your secret key, and the file PUTs straight to storage. Large files
   never touch your Next.js server (no Vercel 4.5 MB body-limit issues), with a real progress bar.
@@ -184,7 +189,7 @@ so the key can never be bundled into a client component.
 [`lib/kit-tracker.ts`](lib/kit-tracker.ts) is the one other import: the browser-side analytics
 tracker, which only ever sees the publishable key.
 
-The dependency is pinned as `^0.6.0`. A caret on a `0.x` version does not cross minor releases,
+The dependency is pinned as `^0.7.0`. A caret on a `0.x` version does not cross minor releases,
 so picking up a new SDK minor is always a deliberate edit here rather than something `npm install`
 does on its own — worth knowing when the API grows a field the template wants to read.
 
@@ -198,13 +203,16 @@ Base URL `https://app.startupkit.app`, auth via `Authorization: Bearer sk_…`:
 | `GET /api/public/v1/jobs/:public_token`        | Job detail, application form schema, JSON-LD               |
 | `POST /api/public/v1/direct_uploads`           | Presigning resume/file uploads (server action)             |
 | `POST /api/public/v1/jobs/:token/applications` | Submitting applications (server action)                    |
+| `PATCH /api/public/v1/insight_answers/:id`     | Optional answers after apply (server action)               |
 | `GET /api/public/v1/talent_pool`               | Talent-pool form schema: fields, consent terms, resume     |
 | `POST /api/public/v1/talent_pool/entries`      | Talent-pool signups (server action)                        |
 | `POST /api/public/v1/events`                   | Job analytics events, from the browser with the `pk_…` key |
 
 Error responses (`{ "error": { "code", "message", "fields" } }`) are surfaced as inline form
 errors; `already_applied` (409), `already_in_talent_pool` (409), `consent_required` (422) and
-`turnstile_failed` (422) get friendly dedicated messages.
+`turnstile_failed` (422) get friendly dedicated messages. A rejected optional answer (422) shows
+Kit's own message, in the job's language, under its question; `not_askable` drops the question and
+`insights_closed` closes the questions, leaving the application as it is.
 
 On job details, hiring stages may include an optional
 `compensation: { amount, currency }` object. The timeline labels the stage as **eligible for a
@@ -223,37 +231,41 @@ fields fall back to `location`. SDK 0.6 or newer.
 
 ```
 app/
-  page.tsx                     # Job list (ISR 60s, tag "jobs") + filters + pagination
-  layout.tsx                   # Shell: header, footer, skip link
+  page.tsx                        # Job list (ISR 60s, tag "jobs") + filters + pagination
+  layout.tsx                      # Shell: header, footer, skip link
   loading.tsx / error.tsx / not-found.tsx
-  opengraph-image.tsx          # Branded OG image
+  opengraph-image.tsx             # Branded OG image
   jobs/[token]/
-    page.tsx                   # Job detail (ISR 300s, JSON-LD, generateStaticParams)
+    page.tsx                      # Job detail (ISR 300s, JSON-LD, generateStaticParams)
     loading.tsx
     apply/
-      page.tsx                 # Fetches the form schema server-side
-      apply-form.tsx           # Client: dynamic field/question renderer, useActionState
-      actions.ts               # Server Action: submitApplication
+      page.tsx                    # Fetches the form schema server-side
+      apply-form.tsx              # Client: dynamic field/question renderer, useActionState
+      insight-deck.tsx            # Client: optional questions after apply, one card at a time
+      insight-question-input.tsx  # One card's native input per question type
+      actions.ts                  # Server Actions: submitApplication, answerInsight
   talent-pool/
-    page.tsx                   # Talent-pool schema + consent terms (ISR 300s)
-    signup-form.tsx            # Client: consent-first signup form, useActionState
-    actions.ts                 # Server Action: joinTalentPool (forwards the consent IP)
-  api/revalidate/route.ts      # Optional webhook → revalidateTag
+    page.tsx                      # Talent-pool schema + consent terms (ISR 300s)
+    signup-form.tsx               # Client: consent-first signup form, useActionState
+    actions.ts                    # Server Action: joinTalentPool (forwards the consent IP)
+  api/revalidate/route.ts         # Optional webhook → revalidateTag
 components/
-  file-upload.tsx              # Client: MD5 → presign → direct PUT with progress
-  kit-analytics.tsx            # Client: <TrackJobBoardView /> + <TrackJobView /> page-view events
-  hiring-process.tsx           # Responsive stage timeline + optional one-time payments
+  file-upload.tsx                 # Client: MD5 → presign → direct PUT with progress
+  kit-analytics.tsx               # Client: <TrackJobBoardView /> + <TrackJobView /> page-view events
+  hiring-process.tsx              # Responsive stage timeline + optional one-time payments
   job-card.tsx  job-filters.tsx  salary.tsx  empty-state.tsx  turnstile.tsx
 lib/
-  kit.ts                       # server-only client instance + re-exported SDK types
-  kit-tracker.ts               # browser analytics tracker (publishable key, no-op without one)
-  kit-errors.ts                # shared submission-failure copy + API field-error shaping
-  upload-actions.ts            # Server Action: createFileUpload (gated presign), shared by both forms
-  upload-rules.ts              # upload slots and their type/size limits, shared with the browser
-  throttle.ts  client-ip.ts    # per-visitor presign throttle, visitor IP from proxy headers
-  md5.ts                       # vendored MD5 (base64) for upload checksums
-  jsonld.ts                    # schema.org JobPosting builder
-  sanitize.ts                  # HTML sanitizer for API-supplied markup
+  kit.ts                          # server-only client instance + re-exported SDK types
+  kit-tracker.ts                  # browser analytics tracker (publishable key, no-op without one)
+  kit-errors.ts                   # shared submission-failure copy + API field-error shaping
+  insight-answers.ts              # optional-question drafts → answer values, display text
+  insight-cookie.ts               # server-only: signs and verifies the answer-token cookie
+  upload-actions.ts               # Server Action: createFileUpload (gated presign), shared by both forms
+  upload-rules.ts                 # upload slots and their type/size limits, shared with the browser
+  throttle.ts  client-ip.ts       # per-visitor presign throttle, visitor IP from proxy headers
+  md5.ts                          # vendored MD5 (base64) for upload checksums
+  jsonld.ts                       # schema.org JobPosting builder
+  sanitize.ts                     # HTML sanitizer for API-supplied markup
   format.ts  jobs.ts  talent-pool.ts  # display helpers, cached job + talent-pool fetchers
 ```
 

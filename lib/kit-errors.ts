@@ -28,3 +28,6 @@ export function normalizeApiFieldErrors(
   }
   return normalized;
 }
+
+export const INSIGHT_SAVE_FAILED_MESSAGE =
+  "Your answer wasn't saved. Check your connection and try again.";
