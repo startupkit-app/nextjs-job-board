@@ -1,9 +1,10 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
-import { formatBytes } from "@/lib/format";
+import { describeContentTypes, formatBytes } from "@/lib/format";
 import { md5Base64 } from "@/lib/md5";
 import { createFileUpload } from "@/lib/upload-actions";
+import type { UploadTarget } from "@/lib/upload-rules";
 
 type UploadStatus = "empty" | "hashing" | "presigning" | "uploading" | "done" | "error";
 
@@ -17,6 +18,7 @@ type UploadStatus = "empty" | "hashing" | "presigning" | "uploading" | "done" | 
  *   4. Mirror the signed_id into a hidden input the surrounding form submits.
  */
 export function FileUpload({
+  target,
   name,
   label,
   required = false,
@@ -24,6 +26,7 @@ export function FileUpload({
   maxByteSize,
   serverError,
 }: {
+  target: UploadTarget;
   /** Name of the hidden input, e.g. "resume_signed_id" or "file:portfolio". */
   name: string;
   label: string;
@@ -67,7 +70,7 @@ export function FileUpload({
       const checksum = md5Base64(await file.arrayBuffer());
 
       setStatus("presigning");
-      const presign = await createFileUpload({
+      const presign = await createFileUpload(target, {
         filename: file.name,
         byte_size: file.size,
         checksum,
@@ -206,14 +209,4 @@ function putWithProgress(
     xhr.addEventListener("abort", () => reject(new Error("Upload aborted")));
     xhr.send(file);
   });
-}
-
-function describeContentTypes(contentTypes: string[]): string {
-  const names = contentTypes.map((type) => {
-    const subtype = type.split("/")[1] ?? type;
-    if (subtype.includes("wordprocessingml")) return "DOCX";
-    if (subtype === "msword") return "DOC";
-    return subtype.toUpperCase();
-  });
-  return Array.from(new Set(names)).join(", ");
 }

@@ -21,7 +21,9 @@ and instant cache busting via webhooks.
   with inline validation errors, character counters, and full keyboard/screen-reader accessibility
 - **Direct-to-storage resume uploads** — the browser computes an MD5 checksum, a Server Action
   presigns the upload with your secret key, and the file PUTs straight to storage. Large files
-  never touch your Next.js server (no Vercel 4.5 MB body-limit issues), with a real progress bar
+  never touch your Next.js server (no Vercel 4.5 MB body-limit issues), with a real progress bar.
+  The presign is gated so it can't be used as an open upload proxy (see
+  [Upload safeguards](#upload-safeguards))
 - **Talent-pool signup** at `/talent-pool` — a consent-first form for people who like the company
   but not today's openings. The consent checkbox starts unchecked and its disclosure is rendered
   from the API, the visitor's real IP is forwarded so the consent receipt records the person and
@@ -81,6 +83,30 @@ send visitors to the matching page on your site and retain campaign attribution.
 Explicit `destination=kit` links and Kit's dedicated application URLs stay on Kit.
 See [CAREERS_URLS.md](CAREERS_URLS.md) for the fixed route contract, nested deployments,
 application behavior and verification steps.
+
+## Upload safeguards
+
+`createFileUpload` is a Server Action, so anyone can call it directly, not only your form. Each
+call spends your secret key's upload budget (300 presigns an hour), and every visitor reaches
+Kit from your server's address, so they all share Kit's per-IP limit (30 an hour). Before it
+presigns, the action:
+
+- checks the file's metadata: a real file name, a base64 MD5 checksum, and a type and size the
+  upload slot accepts. A resume follows the `content_types` and `max_byte_size` the API
+  publishes; an extra file field follows Kit's form-file limits in
+  [`lib/upload-rules.ts`](lib/upload-rules.ts), because the API publishes none for it;
+- ties the upload to an open job that has that file field, or to an open talent pool, read
+  from the same cached schema the form renders from;
+- allows each visitor 10 presigns an hour, keyed on their IP.
+
+The throttle lives in each server instance's memory, so it is a brake on one abusive client,
+not a site-wide quota: serverless instances each count on their own, and a restart clears
+them. If your site gets real traffic, move the count to a shared store, or rate-limit POSTs to
+`/jobs/*/apply` and `/talent-pool` (where Server Actions are posted) at your host, for example
+with a Vercel Firewall rule. The visitor's IP comes from `x-forwarded-for` (first hop) or
+`x-real-ip`. Vercel sets both itself; behind a proxy that appends to a client-sent
+`x-forwarded-for`, a client can fake its address, so have the proxy overwrite the header
+instead. Kit still enforces its own limits and answers `429` when they are hit.
 
 ## How freshness works (ISR + webhooks)
 
@@ -222,7 +248,9 @@ lib/
   kit.ts                       # server-only client instance + re-exported SDK types
   kit-tracker.ts               # browser analytics tracker (publishable key, no-op without one)
   kit-errors.ts                # shared submission-failure copy + API field-error shaping
-  upload-actions.ts            # Server Action: createFileUpload (presign), shared by both forms
+  upload-actions.ts            # Server Action: createFileUpload (gated presign), shared by both forms
+  upload-rules.ts              # upload slots and their type/size limits, shared with the browser
+  throttle.ts  client-ip.ts    # per-visitor presign throttle, visitor IP from proxy headers
   md5.ts                       # vendored MD5 (base64) for upload checksums
   jsonld.ts                    # schema.org JobPosting builder
   sanitize.ts                  # HTML sanitizer for API-supplied markup
@@ -237,7 +265,7 @@ npm run build       # production build
 npm run start       # serve the production build
 npm run lint        # eslint
 npm run typecheck   # tsc --noEmit
-npm test            # route/attribution helpers (Node 22.18+)
+npm test            # route/attribution and upload-gate helpers (Node 22.18+)
 npm run test:browser # production browser regressions, mocked API only
 ```
 

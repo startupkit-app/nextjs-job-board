@@ -73,6 +73,7 @@ export function SignupForm({ form }: { form: TalentPoolForm }) {
       </fieldset>
 
       <FileUpload
+        target={{ kind: "talent_pool" }}
         name="resume_signed_id"
         label="Resume / CV"
         required={form.resume.required}

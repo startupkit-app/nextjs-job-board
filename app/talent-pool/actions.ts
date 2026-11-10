@@ -1,7 +1,7 @@
 "use server";
 
-import { isIP } from "node:net";
 import { headers } from "next/headers";
+import { clientIp } from "@/lib/client-ip";
 import { talentPoolFieldLabel } from "@/lib/format";
 import { kit, KitApiError } from "@/lib/kit";
 import {
@@ -90,7 +90,8 @@ export async function joinTalentPool(
         linkedin_url: linkedinUrl || undefined,
         resume_signed_id: resumeSignedId || undefined,
         consent,
-        consent_ip_address: await consentIpAddress(),
+        // Otherwise the consent receipt names this server's egress IP, not the person.
+        consent_ip_address: clientIp(await headers()),
       },
       { turnstileToken: turnstileToken || undefined }
     );
@@ -135,16 +136,4 @@ export async function joinTalentPool(
       message: "Something went wrong while submitting your details. Please try again.",
     };
   }
-}
-
-/**
- * A Server Action reaches Kit from the deployment's egress IP, so the consent
- * receipt would name this server rather than the person unless we forward the
- * browser's IP. Kit rejects an unparseable value, so omit it when in doubt.
- */
-async function consentIpAddress(): Promise<string | undefined> {
-  const headerList = await headers();
-  const forwardedFor = headerList.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const candidate = forwardedFor || headerList.get("x-real-ip")?.trim() || "";
-  return isIP(candidate) ? candidate : undefined;
 }

@@ -15,6 +15,7 @@ import { Turnstile } from "@/components/turnstile";
 import type { ApplicationForm, FormField, Question } from "@/lib/kit";
 import type { FieldErrors } from "@/lib/kit-errors";
 import { tracker } from "@/lib/kit-tracker";
+import { FORM_FILE_CONSTRAINTS, RESUME_FIELD } from "@/lib/upload-rules";
 import { submitApplication, type ApplyState } from "./actions";
 import {
   buildRules,
@@ -262,6 +263,7 @@ export function ApplyForm({
       </fieldset>
 
       <FileUpload
+        target={{ kind: "job", token, field: RESUME_FIELD }}
         name={RESUME_INPUT_NAME}
         label={RESUME_LABEL}
         required={form.resume.required}
@@ -277,9 +279,12 @@ export function ApplyForm({
             field.type === "file" ? (
               <FileUpload
                 key={field.name}
+                target={{ kind: "job", token, field: field.name }}
                 name={`file:${field.name}`}
                 label={field.label}
                 required={field.required}
+                contentTypes={FORM_FILE_CONSTRAINTS.content_types}
+                maxByteSize={FORM_FILE_CONSTRAINTS.max_byte_size}
                 serverError={errors[field.name]}
               />
             ) : (

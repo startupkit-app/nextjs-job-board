@@ -23,7 +23,9 @@ Three things to get right:
    it every consent receipt names your server as the consenting party rather than the person.
    Ignored for `pk_` browser keys, which Kit observes directly.
 3. **CVs use the existing presigned upload** — `createUpload` → `PUT` the bytes → pass the returned
-   `signed_id` as `resume_signed_id`.
+   `signed_id` as `resume_signed_id`. Presigning on your server with an `sk_` key? Gate that
+   endpoint as [`lib/upload-actions.ts`](lib/upload-actions.ts) does (README "Upload
+   safeguards"), or anyone can spend your upload budget through it.
 
 Reference implementation: [`app/talent-pool/`](app/talent-pool/) in this repo.
 Full API docs: <https://startupkit.app/docs/public-jobs-api>
