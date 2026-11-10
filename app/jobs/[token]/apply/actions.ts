@@ -1,8 +1,17 @@
 "use server";
 
+import { cookies } from "next/headers";
+import { signInsightToken, verifyInsightToken } from "@/lib/insight-cookie";
 import { fetchJob } from "@/lib/jobs";
-import { kit, KitApiError } from "@/lib/kit";
 import {
+  kit,
+  KitApiError,
+  KitInsightError,
+  type ApplicationInsights,
+  type InsightAnswerValue,
+} from "@/lib/kit";
+import {
+  INSIGHT_SAVE_FAILED_MESSAGE,
   normalizeApiFieldErrors,
   RATE_LIMITED_MESSAGE,
   type FieldErrors,
@@ -12,8 +21,17 @@ import {
 
 export type ApplyState =
   | { status: "idle" }
-  | { status: "success"; applicationId: string; submittedAt: string }
+  | { status: "success"; applicationId: string; submittedAt: string; insights?: DeckInsights }
   | { status: "error"; message: string; fieldErrors?: FieldErrors };
+
+export type DeckInsights = Omit<ApplicationInsights, "token">;
+
+export type InsightAnswerState =
+  | { status: "saved"; value: InsightAnswerValue; remaining: number }
+  | { status: "invalid"; message: string }
+  | { status: "not_askable" }
+  | { status: "closed" }
+  | { status: "failed"; message: string };
 
 /** Core contact fields submitted at the top level of the application payload. */
 const CORE_FIELDS = new Set(["email", "first_name", "last_name", "phone"]);
@@ -124,7 +142,19 @@ export async function submitApplication(
       { turnstileToken: turnstileToken || undefined }
     );
 
-    return { status: "success", applicationId: result.id, submittedAt: result.submitted_at };
+    const success = { status: "success", applicationId: result.id, submittedAt: result.submitted_at } as const;
+    if (!result.insights?.questions.length) return success;
+
+    // Page JavaScript never sees the answer token: not in client state, action arguments or URLs.
+    const { token: insightToken, ...insights } = result.insights;
+    const signed = signInsightToken(result.id, insightToken);
+    if (!signed) return success;
+    (await cookies()).set(insightCookie(result.id), signed, {
+      httpOnly: true,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+    });
+    return { ...success, insights };
   } catch (error) {
     if (error instanceof KitApiError) {
       if (error.status === 429) {
@@ -156,4 +186,53 @@ export async function submitApplication(
       message: "Something went wrong while submitting your application. Please try again.",
     };
   }
+}
+
+const INVALID_ANSWER_MESSAGE = "That answer couldn't be saved. Check it and try again.";
+
+// Per application, so a second apply to the same job in this browser can't redirect the first deck.
+function insightCookie(applicationId: string): string {
+  return `kit_insights_${encodeURIComponent(applicationId)}`;
+}
+
+export async function answerInsight(
+  applicationId: string,
+  id: string,
+  value: InsightAnswerValue
+): Promise<InsightAnswerState> {
+  if (typeof applicationId !== "string" || typeof id !== "string" || !id || !isAnswerValue(value)) {
+    return { status: "invalid", message: INVALID_ANSWER_MESSAGE };
+  }
+
+  const store = await cookies();
+  const token = verifyInsightToken(applicationId, store.get(insightCookie(applicationId))?.value);
+  if (!token) return { status: "closed" };
+
+  try {
+    const { answer, remaining } = await kit.answerInsight({ token, id, value });
+    return { status: "saved", value: answer.value, remaining };
+  } catch (error) {
+    if (error instanceof KitInsightError) {
+      if (error.code === "not_askable") return { status: "not_askable" };
+      if (error.code === "insights_closed") {
+        store.delete(insightCookie(applicationId));
+        return { status: "closed" };
+      }
+      return { status: "invalid", message: error.message || INVALID_ANSWER_MESSAGE };
+    }
+    if (error instanceof KitApiError && error.status === 429) {
+      return { status: "failed", message: RATE_LIMITED_MESSAGE };
+    }
+    console.error("Insight answer failed:", error);
+    return { status: "failed", message: INSIGHT_SAVE_FAILED_MESSAGE };
+  }
+}
+
+function isAnswerValue(value: unknown): value is InsightAnswerValue {
+  if (Array.isArray(value)) return value.length <= 100 && value.every((tag) => typeof tag === "string");
+  return (
+    typeof value === "string" ||
+    typeof value === "boolean" ||
+    (typeof value === "number" && Number.isFinite(value))
+  );
 }

@@ -17,9 +17,53 @@ const jobs = [
   application_form: { fields: [], questions: [], consent_disclosure_html: "", resume, turnstile },
 }));
 
+export const INSIGHT_TOKEN = "insight_fixture_token";
+// The employer stopped asking this one after the candidate applied.
+const WITHDRAWN = "mfd_Vx2nQe8k";
+export const insightQuestions = [
+  { id: "mfd_3k9QpL2x", type: "text", prompt: "Which city are you based in?", max_length: 255 },
+  { id: "mfd_8Hn2vRt1", type: "boolean", prompt: "Are you open to joining the on-call rotation, one week in six?" },
+  { id: "mfd_Qw7cZp4m", type: "url", prompt: "Can you share a link to your work?", placeholder: "https://", max_length: 2048 },
+  { id: WITHDRAWN, type: "text", prompt: "What notice period are you on?", max_length: 255 },
+  {
+    id: "mfd_Lr5tYb9e",
+    type: "tags",
+    prompt: "Which of these have you run in production?",
+    choices: ["Kotlin", "PostgreSQL", "Kafka"],
+    max_tags: 10,
+    max_length: 50,
+  },
+];
+
+function insightAnswer(id, payload, state) {
+  const reject = (code, message, id) => [422, { error: { code, message, id } }];
+  if (state.closed || payload.token !== INSIGHT_TOKEN) return reject("insights_closed", "These questions are closed.");
+  const question = insightQuestions.find((item) => item.id === id && item.id !== WITHDRAWN);
+  if (!question) return reject("not_askable", "This question isn't asked anymore.", id);
+  let value = payload.answer.value;
+  if (question.type === "url") {
+    if (typeof value !== "string" || !/^\S+\.\S+$/.test(value)) {
+      return reject("invalid_url", "Use a link that starts with https://.", question.id);
+    }
+    if (!/^https?:\/\//.test(value)) value = `https://${value}`;
+  }
+  state.answers.set(question.id, value);
+  return [200, {
+    answer: { id: question.id, value, answered_at: "2026-10-05T12:01:00Z" },
+    remaining: insightQuestions.length - 1 - state.answers.size,
+  }];
+}
+
+async function readJson(request) {
+  let body = "";
+  for await (const chunk of request) body += chunk;
+  return JSON.parse(body);
+}
+
 /** Deterministic server-side SDK responses; no customer keys, network calls or stored candidates. */
 export async function startMockApi() {
   const submissions = [];
+  const insights = { answers: new Map(), closed: false };
   const server = createServer(async (request, response) => {
     const url = new URL(request.url, "http://localhost");
     const json = (status, data) => {
@@ -27,8 +71,17 @@ export async function startMockApi() {
       response.end(JSON.stringify(data));
     };
     if (url.pathname === "/__submissions") {
-      if (request.method === "DELETE") submissions.length = 0;
+      if (request.method === "DELETE") {
+        submissions.length = 0;
+        insights.answers.clear();
+        insights.closed = false;
+      }
       json(200, submissions);
+      return;
+    }
+    if (url.pathname === "/__insights_closed") {
+      insights.closed = true;
+      json(200, {});
       return;
     }
     if (request.headers.authorization !== "Bearer sk_browser_fixture") {
@@ -61,14 +114,28 @@ export async function startMockApi() {
       json(200, job);
       return;
     }
+    const insightId = url.pathname.match(/^\/api\/public\/v1\/insight_answers\/([^/]+)$/)?.[1];
+    if (request.method === "PATCH" && insightId) {
+      const payload = await readJson(request);
+      submissions.push({ path: url.pathname, body: payload });
+      json(...insightAnswer(decodeURIComponent(insightId), payload, insights));
+      return;
+    }
     if (request.method === "POST") {
-      let body = "";
-      for await (const chunk of request) body += chunk;
-      const payload = JSON.parse(body);
+      const payload = await readJson(request);
       const applicationToken = url.pathname.match(/^\/api\/public\/v1\/jobs\/([^/]+)\/applications$/)?.[1];
       if (jobs.some((item) => item.id === applicationToken)) {
         submissions.push({ path: url.pathname, body: payload });
-        json(201, { id: "app_fixture", status: "submitted", job: applicationToken, submitted_at: "2026-10-05T12:00:00Z" });
+        json(201, {
+          id: "app_fixture",
+          status: "submitted",
+          job: applicationToken,
+          submitted_at: "2026-10-05T12:00:00Z",
+          // Only the engineering job asks questions, so the design job keeps the plain success screen.
+          ...(applicationToken === "engineering-token" && {
+            insights: { token: INSIGHT_TOKEN, expires_at: "2026-10-19T12:00:00Z", questions: insightQuestions },
+          }),
+        });
         return;
       }
       if (url.pathname === "/api/public/v1/talent_pool/entries") {

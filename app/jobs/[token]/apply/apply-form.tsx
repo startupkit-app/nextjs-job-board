@@ -16,7 +16,8 @@ import type { ApplicationForm, FormField, Question } from "@/lib/kit";
 import type { FieldErrors } from "@/lib/kit-errors";
 import { tracker } from "@/lib/kit-tracker";
 import { FORM_FILE_CONSTRAINTS, RESUME_FIELD } from "@/lib/upload-rules";
-import { submitApplication, type ApplyState } from "./actions";
+import { submitApplication, type ApplyState, type DeckInsights } from "./actions";
+import { InsightDeck } from "./insight-deck";
 import {
   buildRules,
   controlId,
@@ -167,7 +168,9 @@ export function ApplyForm({
   }, [state.status, token]);
 
   if (state.status === "success") {
-    return <SuccessPanel jobTitle={jobTitle} applicationId={state.applicationId} />;
+    return (
+      <SuccessPanel jobTitle={jobTitle} applicationId={state.applicationId} insights={state.insights} />
+    );
   }
 
   // An error stays on screen until the applicant has both changed that value
@@ -653,7 +656,52 @@ function autoCompleteFor(name: string): string | undefined {
   }
 }
 
-function SuccessPanel({ jobTitle, applicationId }: { jobTitle: string; applicationId: string }) {
+function SuccessPanel({
+  jobTitle,
+  applicationId,
+  insights,
+}: {
+  jobTitle: string;
+  applicationId: string;
+  insights?: DeckInsights;
+}) {
+  // With questions below, the way out moves under them so it doesn't read as the end of the page.
+  if (insights) {
+    return (
+      <div>
+        <SuccessStatus jobTitle={jobTitle} applicationId={applicationId} />
+        <InsightDeck applicationId={applicationId} insights={insights} />
+        <JobLink
+          href="/"
+          className="mt-8 inline-block text-sm font-medium text-zinc-600 hover:text-indigo-600 dark:text-zinc-400 dark:hover:text-indigo-400"
+        >
+          ← Back to open roles
+        </JobLink>
+      </div>
+    );
+  }
+
+  return (
+    <SuccessStatus jobTitle={jobTitle} applicationId={applicationId}>
+      <JobLink
+        href="/"
+        className="mt-6 inline-block rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+      >
+        Back to open roles
+      </JobLink>
+    </SuccessStatus>
+  );
+}
+
+function SuccessStatus({
+  jobTitle,
+  applicationId,
+  children,
+}: {
+  jobTitle: string;
+  applicationId: string;
+  children?: React.ReactNode;
+}) {
   return (
     <div
       role="status"
@@ -675,12 +723,7 @@ function SuccessPanel({ jobTitle, applicationId }: { jobTitle: string; applicati
       <p className="mt-2 text-xs text-emerald-700 dark:text-emerald-300">
         Reference: <code className="font-mono">{applicationId}</code>
       </p>
-      <JobLink
-        href="/"
-        className="mt-6 inline-block rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
-      >
-        Back to open roles
-      </JobLink>
+      {children}
     </div>
   );
 }
