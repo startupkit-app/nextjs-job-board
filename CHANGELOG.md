@@ -6,6 +6,17 @@ tagged or released to a registry, so entries are grouped by date instead of vers
 
 ## [Unreleased]
 
+### Security
+
+- `createFileUpload` no longer presigns for any caller. It checks the file name, checksum, type
+  and size against the upload slot, requires an open job with that file field (or an open
+  talent pool), and allows each visitor 10 presigns an hour. Before, anyone could call it in a
+  loop to spend the site's Kit upload budget and the per-IP limit every visitor shares.
+  `FileUpload` now takes a `target` prop naming its slot. README "Upload safeguards" covers the
+  throttle's per-instance limits and the proxy header it trusts
+- Extra file fields on the apply form now refuse, in the browser, the types and sizes Kit would
+  reject (PDF, DOC, DOCX, PNG, JPEG, GIF, WEBP; 25 MB)
+
 ### Added
 
 - `lib/format.ts` `formatJobLocation`: the API's `location_display` label, falling back to

@@ -73,3 +73,13 @@ export function formatBytes(bytes: number): string {
   if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${bytes} B`;
 }
+
+export function describeContentTypes(contentTypes: string[]): string {
+  const names = contentTypes.map((type) => {
+    const subtype = type.split("/")[1] ?? type;
+    if (subtype.includes("wordprocessingml")) return "DOCX";
+    if (subtype === "msword") return "DOC";
+    return subtype.toUpperCase();
+  });
+  return Array.from(new Set(names)).join(", ");
+}

@@ -7,7 +7,7 @@ Next.js App Router careers-site template on the Kit (startupkit.app) public hiri
 - `npm run dev` / `npm run build` / `npm run start`
 - `npm run lint` (eslint, `eslint-config-next` core-web-vitals + typescript)
 - `npm run typecheck` (`tsc --noEmit`)
-- `npm test` runs route/attribution helpers (Node 22.18+; Node 24 in CI).
+- `npm test` runs route/attribution and upload-gate helpers (Node 22.18+; Node 24 in CI).
 - `npm run test:browser` builds the actual app with a local fixture API, then runs native Playwright against root and `/careers` deployments. Install Chromium once with `npx playwright install chromium`. No real API key or customer data is used. The harness excludes `.env*` files and overrides SDK/analytics/Turnstile configuration.
 - `.github/workflows/browser.yml` runs lint, typecheck, helper tests and browser regressions on PRs/main. Dependabot updates dependencies weekly with a 7-day cooldown.
 - `.npmrc` sets `min-release-age=7`; npm below the `engines` floor silently ignores it. `@startupkit-app/*` is exempt from the cooldown.
@@ -27,7 +27,7 @@ Next.js App Router careers-site template on the Kit (startupkit.app) public hiri
 ## Layout
 
 - `@startupkit-app/jobs` is imported in exactly two places: `lib/kit.ts` (secret-key client + re-exported types, `server-only`) and `lib/kit-tracker.ts` (`pk_` analytics tracker, client-safe on purpose). Everything else imports from those.
-- `lib/jobs.ts`, `lib/talent-pool.ts` cached fetchers; `lib/sanitize.ts` HTML sanitizer; `lib/upload-actions.ts` presign Server Action shared by both forms; `lib/kit-errors.ts` API error -> form error shaping; `lib/md5.ts` vendored MD5 for upload checksums.
+- `lib/jobs.ts`, `lib/talent-pool.ts` cached fetchers; `lib/sanitize.ts` HTML sanitizer; `lib/upload-actions.ts` presign Server Action shared by both forms, gated by `lib/upload-rules.ts` (slot type/size limits), `lib/throttle.ts` and `lib/client-ip.ts`; `lib/kit-errors.ts` API error -> form error shaping; `lib/md5.ts` vendored MD5 for upload checksums.
 - `app/page.tsx` job list; `app/jobs/[token]/` detail + `apply/` (form, `actions.ts`, `validation.ts`); `app/talent-pool/`; `app/api/revalidate/route.ts` webhook.
 - `components/`: shared UI. Client components: `file-upload.tsx`, `turnstile.tsx`, `job-filters.tsx` (URL-driven filter state), `kit-analytics.tsx` (view tracking).
 - Path alias `@/*` -> repo root.
@@ -41,6 +41,7 @@ Next.js App Router careers-site template on the Kit (startupkit.app) public hiri
 - Caching: list `revalidate: 60` tag `jobs`; job detail/apply `revalidate: 300` tags `jobs` + `job-<token>`; talent pool `revalidate: 300` tag `talent-pool`. The webhook route calls `revalidateTag(tag, "max")`. Keep new fetches on these tags or the webhook will not bust them.
 - Webhook auth is signature-based (`X-Webhook-Signature` HMAC-SHA256 over `<timestamp>.<body>`, 5-minute window), not a bearer token. Read the raw body before parsing.
 - File uploads never hit the Next.js server: browser MD5 -> `createFileUpload` presign -> direct PUT. Do not route file bytes through a Server Action (Vercel 4.5 MB body limit).
+- `createFileUpload(target, meta)` is callable by anyone, so it re-checks the slot (`{ kind: "job", token, field }` or `{ kind: "talent_pool" }`) against the live schema, validates the metadata and throttles per visitor IP before presigning. A new uploader must pass its `target`; keep the gate ahead of any Kit call. See README "Upload safeguards".
 - Talent pool: consent checkbox unchecked by default; Server Action forwards first hop of `x-forwarded-for` as `consent_ip_address`. See `TALENT_POOL.md`.
 - Forms use `useActionState`; API errors map through `lib/kit-errors.ts` (`already_applied`, `already_in_talent_pool`, `consent_required`, `turnstile_failed` have dedicated copy).
 - Analytics fire from the browser only, once per view (ref guard vs StrictMode), submit events on success only. See `ANALYTICS.md`.
