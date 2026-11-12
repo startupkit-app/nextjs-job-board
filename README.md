@@ -294,3 +294,10 @@ Notable changes are recorded in [CHANGELOG.md](CHANGELOG.md).
 ## License
 
 [MIT](LICENSE)
+
+### Job alerts
+
+The board includes email-only alerts for all new roles. Signup requires email confirmation,
+then offers the talent pool as a separate optional step with its own consent. Requires SDK
+0.8.0 and the matching Kit server release; see [JOB_ALERTS.md](JOB_ALERTS.md) for merge order,
+API details and verification.

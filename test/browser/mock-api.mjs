@@ -108,6 +108,15 @@ export async function startMockApi() {
       });
       return;
     }
+    if (request.method === "GET" && url.pathname === "/api/public/v1/job_alert_subscriptions") {
+      json(200, {
+        accepting_subscriptions: true,
+        privacy_policy_url: "https://example.test/privacy",
+        turnstile,
+        talent_pool_url: "https://kit.example.test/talent_pool",
+      });
+      return;
+    }
     const token = url.pathname.match(/^\/api\/public\/v1\/jobs\/([^/]+)$/)?.[1];
     const job = jobs.find((item) => item.id === token);
     if (request.method === "GET" && job) {
@@ -136,6 +145,15 @@ export async function startMockApi() {
             insights: { token: INSIGHT_TOKEN, expires_at: "2026-10-19T12:00:00Z", questions: insightQuestions },
           }),
         });
+        return;
+      }
+      if (url.pathname === "/api/public/v1/job_alert_subscriptions") {
+        if (payload.job_alert_subscription.email === "reject@example.test") {
+          json(422, { error: { code: "validation_failed", fields: { email: ["is invalid"] } } });
+          return;
+        }
+        submissions.push({ path: url.pathname, body: payload });
+        json(202, { status: "pending_confirmation" });
         return;
       }
       if (url.pathname === "/api/public/v1/talent_pool/entries") {

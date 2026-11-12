@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { JobAlerts } from "@/components/job-alerts";
+import { fetchJobAlerts, jobAlertPrivacyUrl } from "@/lib/job-alerts";
 import { EmptyState } from "@/components/empty-state";
 import { JobLink } from "@/components/job-link";
 import { JobCard } from "@/components/job-card";
@@ -32,7 +34,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
 
   // One filtered fetch for the list, one unfiltered fetch for facet options.
   // Both are cached for 60s and tagged "jobs" for on-demand revalidation.
-  const [{ data: jobs, pagination }, facetSource] = await Promise.all([
+  const [{ data: jobs, pagination }, facetSource, alerts] = await Promise.all([
     kit.listJobs(
       { ...filters, page, per_page: PER_PAGE },
       { next: { revalidate: 60, tags: ["jobs"] } }
@@ -40,6 +42,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
     hasFilters || page > 1
       ? kit.listJobs({ per_page: 100 }, { next: { revalidate: 60, tags: ["jobs"] } })
       : undefined,
+    fetchJobAlerts(),
   ]);
 
   const facets = buildFacets((facetSource ?? { data: jobs }).data);
@@ -75,8 +78,8 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           title={hasFilters ? "No matching roles" : "No open roles right now"}
           description={
             hasFilters
-              ? "Try removing a filter or two — or join our talent pool and we'll email you when a matching role opens."
-              : "We're not hiring at the moment, but new roles open up regularly. Join our talent pool and we'll get in touch when one fits."
+              ? "Try removing a filter or two, or share your profile in our talent pool for future opportunities."
+              : "There are no openings to apply for right now. You can share your profile in our talent pool for future opportunities."
           }
           action={
             <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
@@ -108,6 +111,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       )}
 
       <Pagination pagination={pagination} searchParams={sp} />
+      {alerts?.accepting_subscriptions && <JobAlerts form={alerts} locale={param("locale")} privacyUrl={jobAlertPrivacyUrl(alerts.privacy_policy_url)} />}
     </div>
   );
 }

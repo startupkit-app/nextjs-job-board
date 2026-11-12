@@ -11,6 +11,7 @@ interface TurnstileApi {
     options: {
       sitekey: string;
       theme?: "auto" | "light" | "dark";
+      size?: "normal" | "compact";
       callback?: (token: string) => void;
       "expired-callback"?: () => void;
       "error-callback"?: () => void;
@@ -36,7 +37,7 @@ declare global {
  * already-spent token. Bump `resetKey` (e.g. an error counter) to ask the
  * widget for a fresh one.
  */
-export function Turnstile({ sitekey, resetKey }: { sitekey: string; resetKey?: number }) {
+export function Turnstile({ sitekey, resetKey, size = "normal" }: { sitekey: string; resetKey?: number; size?: "normal" | "compact" }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | undefined>(undefined);
   const lastResetKeyRef = useRef(resetKey);
@@ -52,6 +53,7 @@ export function Turnstile({ sitekey, resetKey }: { sitekey: string; resetKey?: n
       widgetIdRef.current = window.turnstile.render(container, {
         sitekey,
         theme: "auto",
+        size,
         callback: (value) => setToken(value),
         "expired-callback": () => setToken(""),
         "error-callback": () => setToken(""),
@@ -79,7 +81,7 @@ export function Turnstile({ sitekey, resetKey }: { sitekey: string; resetKey?: n
         widgetIdRef.current = undefined;
       }
     };
-  }, [sitekey]);
+  }, [sitekey, size]);
 
   // Deliberately *not* folded into the render effect above: putting `resetKey`
   // in its deps would tear down and rebuild the iframe on every error. Reset
