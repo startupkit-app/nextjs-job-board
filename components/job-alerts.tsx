@@ -56,9 +56,9 @@ export function JobAlerts({ form, locale, privacyUrl }: { form: JobAlertForm; lo
             <button type="submit" disabled={pending || (form.turnstile.required && !form.turnstile.sitekey)} className="min-h-11 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-60">{pending ? "Requesting…" : "Get job alerts"}</button>
           </div>
           {locale && <input type="hidden" name="locale" value={locale} />}
-          {form.turnstile.required && form.turnstile.sitekey && <div className="mt-3"><Turnstile sitekey={form.turnstile.sitekey} size="compact" resetKey={state.attempt} /></div>}
           {form.turnstile.required && !form.turnstile.sitekey && <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">Job alerts are temporarily unavailable. Please try again later.</p>}
           <p className="mt-3 text-xs leading-5 text-zinc-500 dark:text-zinc-400">By selecting Get job alerts, you ask to receive new-job emails. We&apos;ll ask you to confirm your address. Your details won&apos;t be added to the talent pool.{privacyUrl && <> <a href={privacyUrl} className="underline underline-offset-2">Privacy policy</a>.</>}</p>
+          {form.turnstile.required && form.turnstile.sitekey && <Turnstile sitekey={form.turnstile.sitekey} size="compact" resetKey={state.attempt} quiet />}
         </form>
       )}
     </section>

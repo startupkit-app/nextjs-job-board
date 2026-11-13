@@ -2,6 +2,8 @@ import { createServer } from "node:http";
 
 const resume = { required: false, content_types: ["application/pdf"], max_byte_size: 5_000_000 };
 const turnstile = { required: false, sitekey: null };
+// Job alerts run the quiet widget against the stub in job-alerts.spec.ts; Cloudflare stays unreachable.
+const alertTurnstile = { required: true, sitekey: "fixture-sitekey" };
 const jobs = [
   { id: "engineering-token", title: "Platform Engineer", department: "Engineering", remote: true },
   { id: "design-token", title: "Product Designer", department: "Product", remote: false },
@@ -112,7 +114,7 @@ export async function startMockApi() {
       json(200, {
         accepting_subscriptions: true,
         privacy_policy_url: "https://example.test/privacy",
-        turnstile,
+        turnstile: alertTurnstile,
         talent_pool_url: "https://kit.example.test/talent_pool",
       });
       return;
