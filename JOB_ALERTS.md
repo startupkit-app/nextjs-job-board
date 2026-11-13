@@ -24,6 +24,11 @@ email and locale, and uses the existing server-only SDK client. No new environme
 Failures retain the email, focus the relevant error and refresh a consumed Turnstile token.
 The alert form uses the [compact Turnstile size](https://developers.cloudflare.com/turnstile/get-started/client-side-rendering/widget-configurations/#widget-sizes)
 to fit narrow phone layouts; existing forms keep their default size.
+It also runs Turnstile quietly (`<Turnstile quiet />`): [interaction-only appearance and
+execute mode](https://developers.cloudflare.com/turnstile/get-started/client-side-rendering/widget-configurations/#appearance-modes),
+so the challenge starts on the first interaction with the form and the widget only appears
+when Cloudflare needs the visitor. A submit that beats the token waits for it. No dashboard
+change: both are render options on the existing Managed widget.
 
 **Merge order:** merge/deploy Kit, merge/publish SDK 0.8.0, then refresh this template's npm
 lockfile from the registry (`npm install`) and merge this PR. The pre-release lock entry has

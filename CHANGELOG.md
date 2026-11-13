@@ -41,6 +41,9 @@ tagged or released to a registry, so entries are grouped by date instead of vers
 
 ### Changed
 
+- The job-alert form runs Turnstile quietly: hidden unless Cloudflare needs the visitor, started
+  on the first interaction with the form, and a quick submit waits for the token. `Turnstile`
+  takes a `quiet` prop; the apply and talent-pool forms keep the visible widget
 - `@startupkit-app/jobs` dependency raised to `^0.7.0` for `insights` on the apply result and
   `answerInsight`
 - `npm test` runs under `--conditions=react-server`, so unit tests can import `server-only`
