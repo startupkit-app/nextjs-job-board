@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
+import { previewMode } from "@/lib/preview";
 import { jobTags } from "@/lib/jobs";
 
 /**
@@ -60,6 +61,7 @@ type WebhookBody = {
 };
 
 export async function POST(request: Request) {
+  if (previewMode) return new NextResponse(null, { status: 404 });
   const secret = process.env.KIT_WEBHOOK_SIGNING_SECRET;
   if (!secret) {
     return NextResponse.json(

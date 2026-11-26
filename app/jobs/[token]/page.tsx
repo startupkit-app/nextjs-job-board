@@ -9,6 +9,7 @@ import { jobPostingJsonLd, serializeJsonLd } from "@/lib/jsonld";
 import { fetchJob } from "@/lib/jobs";
 import { kit } from "@/lib/kit";
 import { jobApplyPath } from "@/lib/job-paths";
+import { previewMode } from "@/lib/preview";
 
 // ISR: pages regenerate at most every 5 minutes; the /api/revalidate webhook
 // (tags "jobs" / "job-<token>") can bust them instantly.
@@ -17,7 +18,7 @@ export const dynamicParams = true;
 
 type Params = Promise<{ token: string }>;
 
-export async function generateStaticParams() {
+async function generatePublishedStaticParams() {
   try {
     const { data } = await kit.listJobs(
       { per_page: 100 },
@@ -30,7 +31,12 @@ export async function generateStaticParams() {
   }
 }
 
+// An empty generateStaticParams result enables static fallback rendering. Preview
+// routes require a fresh request so Next can read the session cookie.
+export const generateStaticParams = previewMode ? undefined : generatePublishedStaticParams;
+
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  if (previewMode) return { title: "Private careers preview", robots: { index: false, follow: false } };
   const { token } = await params;
   const job = await fetchJob(token);
   // The loading.tsx streaming boundary commits a 200 before the API responds,
@@ -56,18 +62,22 @@ export default async function JobPage({ params }: { params: Params }) {
 
   return (
     <article className="space-y-8">
-      <TrackJobView job={job.id} />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jobPostingJsonLd(job)) }}
-      />
+      {!previewMode && (
+        <>
+          <TrackJobView job={job.id} />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: serializeJsonLd(jobPostingJsonLd(job)) }}
+          />
+        </>
+      )}
 
       <div>
         <JobLink
           href="/"
           className="text-sm font-medium text-zinc-500 hover:text-indigo-600 dark:text-zinc-400 dark:hover:text-indigo-400"
         >
-          ← All open roles
+          ← {previewMode ? "All sample roles" : "All open roles"}
         </JobLink>
 
         <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -80,7 +90,7 @@ export default async function JobPage({ params }: { params: Params }) {
             </div>
             <div className="mt-3 space-y-0.5 text-sm text-zinc-600 dark:text-zinc-400">
               <Salary salary={job.salary} className="font-medium text-zinc-900 dark:text-zinc-100" />
-              <p>Posted {formatDate(job.published_at)}</p>
+              {!previewMode && <p>Posted {formatDate(job.published_at)}</p>}
             </div>
           </div>
 
@@ -104,7 +114,7 @@ export default async function JobPage({ params }: { params: Params }) {
 }
 
 function ApplyButton({ token, accepting }: { token: string; accepting: boolean }) {
-  if (!accepting) {
+  if (!previewMode && !accepting) {
     return (
       <p className="inline-flex shrink-0 items-center rounded-lg bg-zinc-100 px-4 py-2.5 text-sm font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
         No longer accepting applications
@@ -116,7 +126,7 @@ function ApplyButton({ token, accepting }: { token: string; accepting: boolean }
       href={jobApplyPath(token)}
       className="inline-flex shrink-0 items-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
     >
-      Apply for this role
+      {previewMode ? "Preview application" : "Apply for this role"}
     </JobLink>
   );
 }

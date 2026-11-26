@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { clientIp } from "@/lib/client-ip";
+import { previewMode } from "@/lib/preview";
 import { kit, KitApiError } from "@/lib/kit";
 import { RATE_LIMITED_MESSAGE } from "@/lib/kit-errors";
 import { createThrottle } from "@/lib/throttle";
@@ -18,6 +19,7 @@ export async function subscribeToJobAlerts(
   _previous: JobAlertState,
   formData: FormData
 ): Promise<JobAlertState> {
+  if (previewMode) return { status: "error", message: "Job alerts are unavailable in this preview." };
   const value = (key: string) => {
     const raw = formData.get(key);
     return typeof raw === "string" ? raw.trim() : "";

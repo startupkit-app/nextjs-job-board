@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { clientIp } from "@/lib/client-ip";
 import { talentPoolFieldLabel } from "@/lib/format";
+import { previewMode } from "@/lib/preview";
 import { kit, KitApiError } from "@/lib/kit";
 import {
   normalizeApiFieldErrors,
@@ -25,6 +26,7 @@ export async function joinTalentPool(
   _previous: SignupState,
   formData: FormData
 ): Promise<SignupState> {
+  if (previewMode) return { status: "error", message: "Talent-pool signups are unavailable in this preview." };
   const form = await fetchTalentPool();
   if (!form) {
     return { status: "error", message: "This talent pool is no longer available." };

@@ -86,7 +86,24 @@ export async function startMockApi() {
       json(200, {});
       return;
     }
-    if (request.headers.authorization !== "Bearer sk_browser_fixture") {
+    const preview = request.headers.authorization === "Bearer dp_browser_fixture";
+    if (preview && request.method === "GET") {
+      if (url.pathname === "/api/public/v1/prospect_demo_assets") {
+        json(200, { logo: true, background: true, font: false });
+        return;
+      }
+      if (["logo", "background"].some((kind) => url.pathname === `/api/public/v1/prospect_demo_assets/${kind}`)) {
+        const image = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+XPH0AAAAASUVORK5CYII=", "base64");
+        response.writeHead(200, { "Content-Type": "image/png" });
+        response.end(image);
+        return;
+      }
+    }
+    if (preview && !(request.method === "GET" && /^\/api\/public\/v1\/jobs(?:\/[^/]+)?$/.test(url.pathname))) {
+      json(401, { error: { code: "invalid_key", message: "Preview key is read-only." } });
+      return;
+    }
+    if (!preview && request.headers.authorization !== "Bearer sk_browser_fixture") {
       json(401, { error: { code: "invalid_key", message: "Use the fixture key." } });
       return;
     }
@@ -122,7 +139,7 @@ export async function startMockApi() {
     const token = url.pathname.match(/^\/api\/public\/v1\/jobs\/([^/]+)$/)?.[1];
     const job = jobs.find((item) => item.id === token);
     if (request.method === "GET" && job) {
-      json(200, job);
+      json(200, preview ? { ...job, published_at: null, url: null, apply_url: null, accepting_applications: false } : job);
       return;
     }
     const insightId = url.pathname.match(/^\/api\/public\/v1\/insight_answers\/([^/]+)$/)?.[1];

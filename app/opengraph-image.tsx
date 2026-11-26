@@ -1,5 +1,7 @@
 import { ImageResponse } from "next/og";
 
+import { previewMode } from "@/lib/preview";
+
 const companyName = process.env.NEXT_PUBLIC_COMPANY_NAME || "Our company";
 
 export const alt = `Careers at ${companyName}`;
@@ -7,6 +9,7 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default function OpengraphImage() {
+  if (previewMode) return new Response(null, { status: 404 });
   return new ImageResponse(
     (
       <div

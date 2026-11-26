@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { clientIp } from "./client-ip";
 import { describeContentTypes, formatBytes } from "./format";
 import { fetchJob } from "./jobs";
+import { previewMode } from "./preview";
 import { kit, KitApiError, type UploadMeta } from "./kit";
 import { RATE_LIMITED_MESSAGE } from "./kit-errors";
 import { fetchTalentPool } from "./talent-pool";
@@ -36,6 +37,7 @@ const NOT_ON_FORM_MESSAGE = "This file isn't part of the form you're filling in.
  * Shared by the job application form and the talent-pool signup form.
  */
 export async function createFileUpload(target: UploadTarget, meta: UploadMeta): Promise<PresignResult> {
+  if (previewMode) return { ok: false, error: "Uploads are unavailable in this preview." };
   const malformed = metadataRefusal(meta);
   if (malformed === "filename") {
     return { ok: false, error: "That file name can't be used. Rename the file and try again." };

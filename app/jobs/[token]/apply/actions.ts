@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { signInsightToken, verifyInsightToken } from "@/lib/insight-cookie";
+import { previewMode } from "@/lib/preview";
 import { fetchJob } from "@/lib/jobs";
 import {
   kit,
@@ -48,6 +49,7 @@ export async function submitApplication(
   _previous: ApplyState,
   formData: FormData
 ): Promise<ApplyState> {
+  if (previewMode) return { status: "error", message: "Applications are unavailable in this preview." };
   const job = await fetchJob(token);
   if (!job) {
     return { status: "error", message: "This job posting no longer exists." };
@@ -200,6 +202,7 @@ export async function answerInsight(
   id: string,
   value: InsightAnswerValue
 ): Promise<InsightAnswerState> {
+  if (previewMode) return { status: "closed" };
   if (typeof applicationId !== "string" || typeof id !== "string" || !id || !isAnswerValue(value)) {
     return { status: "invalid", message: INVALID_ANSWER_MESSAGE };
   }

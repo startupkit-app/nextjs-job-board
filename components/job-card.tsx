@@ -4,7 +4,7 @@ import { Salary } from "@/components/salary";
 import { formatDate, formatEmploymentType, formatJobLocation } from "@/lib/format";
 import type { Job } from "@/lib/kit";
 
-export function JobCard({ job }: { job: Job }) {
+export function JobCard({ job, showPublishedDate = true }: { job: Job; showPublishedDate?: boolean }) {
   const location = formatJobLocation(job);
 
   return (
@@ -30,9 +30,11 @@ export function JobCard({ job }: { job: Job }) {
         </div>
         <div className="shrink-0 text-sm sm:text-right">
           <Salary salary={job.salary} />
-          <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-500">
-            Posted {formatDate(job.published_at)}
-          </p>
+          {showPublishedDate && (
+            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-500">
+              Posted {formatDate(job.published_at)}
+            </p>
+          )}
         </div>
       </div>
     </JobLink>

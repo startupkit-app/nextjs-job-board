@@ -63,14 +63,19 @@ try {
   await symlink(join(root, "node_modules"), join(workspace, "node_modules"), "junction");
   await rename(join(workspace, "next.config.ts"), join(workspace, "next.config.original.ts"));
 
-  for (const basePath of ["", "/careers"]) {
-    console.log(`\nBrowser regression: ${basePath || "/"}`);
+  for (const { basePath, preview } of [
+    { basePath: "", preview: false },
+    { basePath: "/careers", preview: false },
+    { basePath: "/careers", preview: true },
+  ]) {
+    console.log(`\nBrowser regression: ${basePath || "/"}${preview ? " (private preview)" : ""}`);
     await writeFile(join(workspace, "next.config.ts"), `import config from "./next.config.original";\nexport default { ...config, basePath: ${JSON.stringify(basePath)} };\n`);
     await rm(join(workspace, ".next"), { recursive: true, force: true });
     const env = {
       ...process.env,
       NEXT_TELEMETRY_DISABLED: "1",
-      STARTUPKIT_SECRET_KEY: "sk_browser_fixture",
+      STARTUPKIT_SECRET_KEY: preview ? "dp_browser_fixture" : "sk_browser_fixture",
+      STARTUPKIT_PREVIEW_PASSWORD: preview ? "a-generated-test-password-only" : "",
       STARTUPKIT_BASE_URL: api.url,
       NEXT_PUBLIC_STARTUPKIT_PUBLISHABLE_KEY: "",
       NEXT_PUBLIC_STARTUPKIT_BASE_URL: api.url,
@@ -90,9 +95,9 @@ try {
         if (Date.now() > deadline) throw new Error("Next.js server did not become ready.");
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
-      await completed(command(playwright, ["test"], {
+      await completed(command(playwright, preview ? ["test", "prospect-preview"] : ["test", "--grep-invert", "prospect preview"], {
         cwd: root,
-        env: { ...env, KIT_TEST_SITE_URL: siteUrl, KIT_TEST_API_URL: api.url, KIT_TEST_BASE_PATH: basePath },
+        env: { ...env, KIT_TEST_SITE_URL: siteUrl, KIT_TEST_API_URL: api.url, KIT_TEST_BASE_PATH: basePath, KIT_TEST_PREVIEW: preview ? "1" : "" },
       }));
     } finally {
       await stop(app);

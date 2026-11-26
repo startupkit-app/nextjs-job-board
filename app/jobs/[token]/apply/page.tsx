@@ -4,6 +4,8 @@ import { fetchJob } from "@/lib/jobs";
 import { formatJobLocation } from "@/lib/format";
 import { JobLink } from "@/components/job-link";
 import { jobPath } from "@/lib/job-paths";
+import { SampleApplication } from "@/components/sample-application";
+import { previewMode } from "@/lib/preview";
 import { ApplyForm } from "./apply-form";
 
 export const revalidate = 300;
@@ -11,6 +13,7 @@ export const revalidate = 300;
 type Params = Promise<{ token: string }>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  if (previewMode) return { title: "Application preview", robots: { index: false, follow: false } };
   const { token } = await params;
   const job = await fetchJob(token);
   if (!job) return { title: "Job not found", robots: { index: false } };
@@ -34,13 +37,13 @@ export default async function ApplyPage({ params }: { params: Params }) {
         ← Back to job description
       </JobLink>
 
-      <h1 className="mt-4 text-2xl font-bold tracking-tight">Apply for {job.title}</h1>
+      <h1 className="mt-4 text-2xl font-bold tracking-tight">{previewMode ? job.title : `Apply for ${job.title}`}</h1>
       <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400">
         {[job.department, formatJobLocation(job)].filter(Boolean).join(" · ")}
       </p>
 
       <div className="mt-8">
-        {job.accepting_applications ? (
+        {previewMode ? <SampleApplication /> : job.accepting_applications ? (
           <ApplyForm token={job.id} jobTitle={job.title} form={job.application_form} />
         ) : (
           <div className="rounded-xl border border-zinc-200 bg-white px-6 py-10 text-center dark:border-zinc-800 dark:bg-zinc-900">

@@ -28,6 +28,10 @@ body {
     sans-serif;
 }
 
+.preview-identity-font :is(h1, h2) {
+  font-family: "Preview Brand", ui-sans-serif, system-ui, sans-serif;
+}
+
 /* Rich-text styles for API-provided HTML (job descriptions, consent text). */
 .job-description {
   @apply text-[0.95rem] leading-7 text-zinc-700 dark:text-zinc-300;

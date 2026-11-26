@@ -4,7 +4,7 @@ if (!process.env.KIT_TEST_SITE_URL || !process.env.KIT_TEST_API_URL) {
   throw new Error("Run browser tests through npm run test:browser (mock API only).");
 }
 
-const mode = process.env.KIT_TEST_BASE_PATH ? "careers" : "root";
+const mode = process.env.KIT_TEST_PREVIEW ? "preview" : process.env.KIT_TEST_BASE_PATH ? "careers" : "root";
 
 export default defineConfig({
   testDir: "./test/browser",

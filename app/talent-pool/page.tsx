@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { JobLink } from "@/components/job-link";
 import { notFound } from "next/navigation";
 import { SetupNotice } from "@/components/setup-notice";
+import { previewMode } from "@/lib/preview";
 import { kitConfigured } from "@/lib/kit";
 import { fetchTalentPool } from "@/lib/talent-pool";
 import { SignupForm } from "./signup-form";
@@ -13,6 +14,7 @@ export const revalidate = 300;
 const companyName = process.env.NEXT_PUBLIC_COMPANY_NAME || "our company";
 
 export async function generateMetadata(): Promise<Metadata> {
+  if (previewMode) return { title: "Page unavailable", robots: { index: false, follow: false } };
   if (!kitConfigured) return { title: "Talent pool", robots: { index: false } };
 
   const form = await fetchTalentPool();
@@ -29,6 +31,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function TalentPoolPage() {
+  if (previewMode) notFound();
   if (!kitConfigured) return <SetupNotice />;
 
   const form = await fetchTalentPool();

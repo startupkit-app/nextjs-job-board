@@ -79,6 +79,36 @@ npm run dev
 | `KIT_WEBHOOK_SIGNING_SECRET`     | No       | Signing secret of the Kit webhook endpoint targeting `POST /api/revalidate` |
 | `NEXT_PUBLIC_COMPANY_NAME`       | No       | Company name for the header, titles, and JobPosting structured data         |
 
+## Private prospect preview
+
+A Kit prospect-demo `dp_…` key enables the private preview. Start from the
+template in a reviewed, private repository for the prospect. Deploy the
+reviewed commit to a separate HTTPS deployment and set these variables in
+the hosting provider's encrypted server environment.
+
+- `STARTUPKIT_SECRET_KEY` is the demo's read-only `dp_…` key.
+- `STARTUPKIT_PREVIEW_PASSWORD` is a distinct high-entropy password generated
+  for that deployment. Use at least 24 characters, for example `openssl rand -hex 24`.
+- `NEXT_PUBLIC_COMPANY_NAME` is the prospect's display name. The locked screen
+  uses Kit branding until a visitor enters the preview password. If the operator
+  uploaded a logo, background or font in Kit, this deployment loads it from
+  its same-origin, session-protected asset routes.
+
+Record the canonical HTTPS preview URL in the Kit operator workspace. Use the
+careers homepage, including the `basePath` when applicable. Give the recipient
+that URL and share the preview password separately. Check the password prompt
+while signed out and confirm that the intended recipient can access it if the
+host also requires sign-in. The demo key stays in the server environment. The preview shows seeded roles and a sample application.
+It omits data collection, live application actions, job alerts, analytics and
+JobPosting structured data. Preview responses use private, uncached rendering
+and robots directives. Leave the publishable key, Turnstile and webhook
+variables unset.
+
+After handoff, retire the preview deployment. The customer can configure a
+separate production deployment with a newly issued `sk_…` key and their
+verified careers domain. Leave `STARTUPKIT_PREVIEW_PASSWORD` unset in that
+deployment and follow the production URL steps below.
+
 ## Connect your external careers site to Kit
 
 Keep job descriptions at `/jobs/:public_token`, using `job.id` from the public API.

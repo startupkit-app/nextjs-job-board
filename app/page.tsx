@@ -9,12 +9,14 @@ import { JobFilters } from "@/components/job-filters";
 import { TrackJobBoardView } from "@/components/kit-analytics";
 import { SetupNotice } from "@/components/setup-notice";
 import { kit, kitConfigured, type Job, type Pagination as PaginationData } from "@/lib/kit";
+import { previewMode, requirePreviewAccess } from "@/lib/preview";
 
 const PER_PAGE = 20;
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function HomePage({ searchParams }: { searchParams: SearchParams }) {
+  await requirePreviewAccess();
   if (!kitConfigured) return <SetupNotice />;
 
   const sp = await searchParams;
@@ -34,35 +36,38 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
 
   // One filtered fetch for the list, one unfiltered fetch for facet options.
   // Both are cached for 60s and tagged "jobs" for on-demand revalidation.
+  const jobsRequest = previewMode ? { cache: "no-store" as const } : { next: { revalidate: 60, tags: ["jobs"] } };
   const [{ data: jobs, pagination }, facetSource, alerts] = await Promise.all([
     kit.listJobs(
       { ...filters, page, per_page: PER_PAGE },
-      { next: { revalidate: 60, tags: ["jobs"] } }
+      jobsRequest
     ),
     hasFilters || page > 1
-      ? kit.listJobs({ per_page: 100 }, { next: { revalidate: 60, tags: ["jobs"] } })
+      ? kit.listJobs({ per_page: 100 }, jobsRequest)
       : undefined,
-    fetchJobAlerts(),
+    previewMode ? null : fetchJobAlerts(),
   ]);
 
   const facets = buildFacets((facetSource ?? { data: jobs }).data);
 
   return (
     <div className="space-y-6">
-      <TrackJobBoardView />
+      {!previewMode && <TrackJobBoardView />}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Open roles</h1>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{previewMode ? "Sample roles" : "Open roles"}</h1>
         <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400">
-          {pagination.total_count === 0
+          {previewMode ? "Draft roles for this preview" : pagination.total_count === 0
             ? "No open positions right now."
             : `${pagination.total_count} open ${pagination.total_count === 1 ? "position" : "positions"}.`}
         </p>
-        <JobLink
-          href="/talent-pool"
-          className="mt-2 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
-        >
-          Nothing that fits? Join our talent pool →
-        </JobLink>
+        {!previewMode && (
+          <JobLink
+            href="/talent-pool"
+            className="mt-2 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+          >
+            Nothing that fits? Join our talent pool →
+          </JobLink>
+        )}
       </div>
 
       <Suspense>
@@ -75,9 +80,9 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
 
       {jobs.length === 0 ? (
         <EmptyState
-          title={hasFilters ? "No matching roles" : "No open roles right now"}
+          title={hasFilters ? "No matching roles" : previewMode ? "No sample roles yet" : "No open roles right now"}
           description={
-            hasFilters
+            previewMode ? (hasFilters ? "Try removing a filter or two." : "Sample roles will appear here once added.") : hasFilters
               ? "Try removing a filter or two, or share your profile in our talent pool for future opportunities."
               : "There are no openings to apply for right now. You can share your profile in our talent pool for future opportunities."
           }
@@ -91,12 +96,14 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
                   Clear all filters
                 </JobLink>
               )}
-              <JobLink
-                href="/talent-pool"
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-              >
-                Join our talent pool
-              </JobLink>
+              {!previewMode && (
+                <JobLink
+                  href="/talent-pool"
+                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+                >
+                  Join our talent pool
+                </JobLink>
+              )}
             </div>
           }
         />
@@ -104,7 +111,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
         <ul className="space-y-3">
           {jobs.map((job) => (
             <li key={job.id}>
-              <JobCard job={job} />
+              <JobCard job={job} showPublishedDate={!previewMode} />
             </li>
           ))}
         </ul>
