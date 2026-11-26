@@ -1,8 +1,18 @@
 import type { NextConfig } from "next";
+import { previewMode } from "./lib/preview";
 
 const nextConfig: NextConfig = {
-  // Intentionally minimal — fork away. The template has no required Next.js
-  // configuration beyond the defaults.
+  async headers() {
+    if (!previewMode) return [];
+
+    return [{
+      source: "/:path*",
+      headers: [
+        { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        { key: "Cache-Control", value: "private, no-store" },
+      ],
+    }];
+  },
 };
 
 export default nextConfig;

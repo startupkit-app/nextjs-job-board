@@ -8,16 +8,15 @@ import { JobCard } from "@/components/job-card";
 import { JobFilters } from "@/components/job-filters";
 import { TrackJobBoardView } from "@/components/kit-analytics";
 import { SetupNotice } from "@/components/setup-notice";
-import { kit, kitConfigured, type Job, type Pagination as PaginationData } from "@/lib/kit";
-import { previewMode, requirePreviewAccess } from "@/lib/preview";
+import { kit, kitConfigured, KitApiError, type Job, type Pagination as PaginationData } from "@/lib/kit";
+import { previewMode } from "@/lib/preview";
 
 const PER_PAGE = 20;
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function HomePage({ searchParams }: { searchParams: SearchParams }) {
-  await requirePreviewAccess();
-  if (!kitConfigured) return <SetupNotice />;
+  if (!kitConfigured) return previewMode ? <PreviewUnavailable /> : <SetupNotice />;
 
   const sp = await searchParams;
   const param = (key: string): string | undefined => {
@@ -37,7 +36,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   // One filtered fetch for the list, one unfiltered fetch for facet options.
   // Both are cached for 60s and tagged "jobs" for on-demand revalidation.
   const jobsRequest = previewMode ? { cache: "no-store" as const } : { next: { revalidate: 60, tags: ["jobs"] } };
-  const [{ data: jobs, pagination }, facetSource, alerts] = await Promise.all([
+  const result = await Promise.all([
     kit.listJobs(
       { ...filters, page, per_page: PER_PAGE },
       jobsRequest
@@ -46,7 +45,13 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       ? kit.listJobs({ per_page: 100 }, jobsRequest)
       : undefined,
     previewMode ? null : fetchJobAlerts(),
-  ]);
+  ]).catch((error: unknown) => {
+    if (previewMode && error instanceof KitApiError && error.status === 401) return null;
+    throw error;
+  });
+  if (!result) return <PreviewUnavailable />;
+
+  const [{ data: jobs, pagination }, facetSource, alerts] = result;
 
   const facets = buildFacets((facetSource ?? { data: jobs }).data);
 
@@ -120,6 +125,17 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       <Pagination pagination={pagination} searchParams={sp} />
       {alerts?.accepting_subscriptions && <JobAlerts form={alerts} locale={param("locale")} privacyUrl={jobAlertPrivacyUrl(alerts.privacy_policy_url)} />}
     </div>
+  );
+}
+
+function PreviewUnavailable() {
+  return (
+    <section className="mx-auto max-w-md py-12 text-center">
+      <h1 className="text-xl font-semibold">Demo unavailable</h1>
+      <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+        Ask the person who shared the demo for an updated link.
+      </p>
+    </section>
   );
 }
 

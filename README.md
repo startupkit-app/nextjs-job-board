@@ -79,35 +79,33 @@ npm run dev
 | `KIT_WEBHOOK_SIGNING_SECRET`     | No       | Signing secret of the Kit webhook endpoint targeting `POST /api/revalidate` |
 | `NEXT_PUBLIC_COMPANY_NAME`       | No       | Company name for the header, titles, and JobPosting structured data         |
 
-## Private prospect preview
+## Unlisted prospect demo
 
-A Kit prospect-demo `dp_…` key enables the private preview. Start from the
-template in a reviewed, private repository for the prospect. Deploy the
-reviewed commit to a separate HTTPS deployment and set these variables in
-the hosting provider's encrypted server environment.
+Start from the template in a reviewed source repository for the prospect.
+Deploy the reviewed commit to a separate HTTPS site.
 
-- `STARTUPKIT_SECRET_KEY` is the demo's read-only `dp_…` key.
-- `STARTUPKIT_PREVIEW_PASSWORD` is a distinct high-entropy password generated
-  for that deployment. Use at least 24 characters, for example `openssl rand -hex 24`.
-- `NEXT_PUBLIC_COMPANY_NAME` is the prospect's display name. The locked screen
-  uses Kit branding until a visitor enters the preview password. If the operator
-  uploaded a logo, background or font in Kit, this deployment loads it from
-  its same-origin, session-protected asset routes.
+- `STARTUPKIT_PREVIEW_MODE=1` keeps the demo configuration active even when
+  its API key is missing or invalid.
+- `STARTUPKIT_SECRET_KEY` holds the read-only `dp_…` demo key. Enter it in the
+  hosting provider's encrypted server environment.
+- `NEXT_PUBLIC_COMPANY_NAME` sets the prospect's display name. Kit uploads for
+  logo, background and font appear through same-origin preview asset routes.
 
-Record the canonical HTTPS preview URL in the Kit operator workspace. Use the
-careers homepage, including the `basePath` when applicable. Give the recipient
-that URL and share the preview password separately. Check the password prompt
-while signed out and confirm that the intended recipient can access it if the
-host also requires sign-in. The demo key stays in the server environment. The preview shows seeded roles and a sample application.
-It omits data collection, live application actions, job alerts, analytics and
-JobPosting structured data. Preview responses use private, uncached rendering
-and robots directives. Leave the publishable key, Turnstile and webhook
-variables unset.
+Record the canonical HTTPS homepage in the Kit operator workspace, including
+any `basePath`. Open that URL in a signed-out browser and verify the role list,
+role detail and sample application. Anyone with the link can open the demo.
+Use approved example roles and branding you can share publicly.
 
-After handoff, retire the preview deployment. The customer can configure a
+The demo uses a sample application without personal data collection, analytics,
+alerts or talent-pool signups. Leave the publishable key, Turnstile and webhook
+variables unset. Pages use uncached rendering and `noindex, nofollow` in the
+HTTP response and HTML. Crawlers can read those directives, and the demo has no
+sitemap or JobPosting structured data.
+
+After handoff, retire the demo deployment. The customer can configure a
 separate production deployment with a newly issued `sk_…` key and their
-verified careers domain. Leave `STARTUPKIT_PREVIEW_PASSWORD` unset in that
-deployment and follow the production URL steps below.
+verified careers domain. Leave `STARTUPKIT_PREVIEW_MODE` unset in production
+and follow the URL setup below.
 
 ## Connect your external careers site to Kit
 

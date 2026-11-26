@@ -43,6 +43,38 @@ async function stop(child) {
   clearTimeout(timer);
 }
 
+async function waitForSite(app, homepage) {
+  const deadline = Date.now() + 30_000;
+  while (true) {
+    if (app.exitCode !== null) throw new Error("Next.js server exited before readiness.");
+    try {
+      const response = await fetch(homepage);
+      if (response.ok) return response;
+    } catch { /* Wait for the production server to bind its local port. */ }
+    if (Date.now() > deadline) throw new Error("Next.js server did not become ready.");
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+}
+
+async function verifyUnavailablePreview(workspace, basePath, env) {
+  for (const secret of ["", "sk_browser_fixture"]) {
+    const port = await availablePort();
+    const app = command(next, ["start", "--hostname", "127.0.0.1", "--port", String(port)], {
+      cwd: workspace, env: { ...env, STARTUPKIT_SECRET_KEY: secret },
+    });
+    try {
+      const response = await waitForSite(app, `http://127.0.0.1:${port}${basePath}/`);
+      const html = await response.text();
+      if (!html.includes("Demo unavailable") || html.includes("Product Designer") ||
+          !response.headers.get("x-robots-tag")?.includes("noindex")) {
+        throw new Error("Demo with missing or live key did not fail closed.");
+      }
+    } finally {
+      await stop(app);
+    }
+  }
+}
+
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.once(signal, () => {
     for (const child of processes) child.kill(signal);
@@ -68,16 +100,16 @@ try {
     { basePath: "/careers", preview: false },
     { basePath: "/careers", preview: true },
   ]) {
-    console.log(`\nBrowser regression: ${basePath || "/"}${preview ? " (private preview)" : ""}`);
+    console.log(`\nBrowser regression: ${basePath || "/"}${preview ? " (unlisted demo)" : ""}`);
     await writeFile(join(workspace, "next.config.ts"), `import config from "./next.config.original";\nexport default { ...config, basePath: ${JSON.stringify(basePath)} };\n`);
     await rm(join(workspace, ".next"), { recursive: true, force: true });
     const env = {
       ...process.env,
       NEXT_TELEMETRY_DISABLED: "1",
       STARTUPKIT_SECRET_KEY: preview ? "dp_browser_fixture" : "sk_browser_fixture",
-      STARTUPKIT_PREVIEW_PASSWORD: preview ? "a-generated-test-password-only" : "",
+      STARTUPKIT_PREVIEW_MODE: preview ? "1" : "",
       STARTUPKIT_BASE_URL: api.url,
-      NEXT_PUBLIC_STARTUPKIT_PUBLISHABLE_KEY: "",
+      NEXT_PUBLIC_STARTUPKIT_PUBLISHABLE_KEY: preview ? "pk_preview_fixture" : "",
       NEXT_PUBLIC_STARTUPKIT_BASE_URL: api.url,
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: "",
     };
@@ -86,15 +118,7 @@ try {
     const siteUrl = `http://127.0.0.1:${port}`;
     const app = command(next, ["start", "--hostname", "127.0.0.1", "--port", String(port)], { cwd: workspace, env });
     try {
-      const deadline = Date.now() + 30_000;
-      while (true) {
-        if (app.exitCode !== null) throw new Error("Next.js server exited before readiness.");
-        try {
-          if ((await fetch(`${siteUrl}${basePath}/`)).ok) break;
-        } catch { /* Wait for the production server to bind its local port. */ }
-        if (Date.now() > deadline) throw new Error("Next.js server did not become ready.");
-        await new Promise((resolve) => setTimeout(resolve, 100));
-      }
+      await waitForSite(app, `${siteUrl}${basePath}/`);
       await completed(command(playwright, preview ? ["test", "prospect-preview"] : ["test", "--grep-invert", "prospect preview"], {
         cwd: root,
         env: { ...env, KIT_TEST_SITE_URL: siteUrl, KIT_TEST_API_URL: api.url, KIT_TEST_BASE_PATH: basePath, KIT_TEST_PREVIEW: preview ? "1" : "" },
@@ -102,6 +126,7 @@ try {
     } finally {
       await stop(app);
     }
+    if (preview) await verifyUnavailablePreview(workspace, basePath, env);
   }
 } finally {
   for (const child of processes) await stop(child);

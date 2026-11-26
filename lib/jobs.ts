@@ -1,5 +1,5 @@
-import { kit, KitApiError, type JobDetail } from "./kit";
-import { previewMode, requirePreviewAccess } from "./preview";
+import { kit, kitConfigured, KitApiError, type JobDetail } from "./kit";
+import { previewMode } from "./preview";
 import { sanitizeRichHtml, sanitizeConsentHtml } from "./sanitize";
 
 export const JOB_DETAIL_REVALIDATE = 300;
@@ -14,14 +14,14 @@ export function jobTags(token: string): string[] {
  * Returns null for unknown/unpublished tokens so callers can `notFound()`.
  */
 export async function fetchJob(token: string): Promise<JobDetail | null> {
-  await requirePreviewAccess();
+  if (previewMode && !kitConfigured) return null;
   try {
     const job = await kit.getJob(token, previewMode
       ? { cache: "no-store" }
       : { next: { revalidate: JOB_DETAIL_REVALIDATE, tags: jobTags(token) } });
     return sanitizeJob(job);
   } catch (error) {
-    if (error instanceof KitApiError && error.status === 404) return null;
+    if (error instanceof KitApiError && (error.status === 404 || (previewMode && error.status === 401))) return null;
     throw error;
   }
 }

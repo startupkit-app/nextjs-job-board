@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { connection } from "next/server";
 import { JobLink } from "@/components/job-link";
 import { fetchPreviewIdentity, previewAssetPath } from "@/lib/preview-assets";
-import { hasPreviewAccess, previewMode } from "@/lib/preview";
+import { previewMode } from "@/lib/preview";
 import "./globals.css";
 
 const companyName = process.env.NEXT_PUBLIC_COMPANY_NAME || "Our company";
 
 export const metadata: Metadata = previewMode ? {
-  title: "Private careers preview",
+  title: "Careers demo preview",
   robots: { index: false, follow: false },
 } : {
   title: {
@@ -19,9 +20,9 @@ export const metadata: Metadata = previewMode ? {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const signedIntoPreview = previewMode && await hasPreviewAccess();
-  const displayName = !previewMode || signedIntoPreview ? companyName : "Kit";
-  const identity = signedIntoPreview ? await fetchPreviewIdentity() : null;
+  if (previewMode) await connection();
+  const identity = previewMode ? await fetchPreviewIdentity() : null;
+  const displayName = !previewMode || identity ? companyName : "Kit";
   return (
     <html lang="en">
       <body className={`flex min-h-dvh flex-col ${identity?.font ? "preview-identity-font" : ""}`}>
@@ -63,7 +64,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
         {previewMode && (
           <div className="border-b border-indigo-100 bg-indigo-50 px-4 py-2 text-center text-sm font-medium text-indigo-900 dark:border-indigo-950 dark:bg-indigo-950 dark:text-indigo-100">
-            Private demo · Applications are disabled
+            Unlisted demo · Applications are disabled
           </div>
         )}
         {identity?.background && (

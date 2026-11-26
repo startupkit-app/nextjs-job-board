@@ -65,6 +65,7 @@ async function readJson(request) {
 /** Deterministic server-side SDK responses; no customer keys, network calls or stored candidates. */
 export async function startMockApi() {
   const submissions = [];
+  let previewRevoked = false;
   const insights = { answers: new Map(), closed: false };
   const server = createServer(async (request, response) => {
     const url = new URL(request.url, "http://localhost");
@@ -86,7 +87,12 @@ export async function startMockApi() {
       json(200, {});
       return;
     }
+    if (url.pathname === "/__preview_revocation") {
+      previewRevoked = request.method === "POST";
+      return json(200, { previewRevoked });
+    }
     const preview = request.headers.authorization === "Bearer dp_browser_fixture";
+    if (preview && previewRevoked) return json(401, { error: { code: "invalid_key" } });
     if (preview && request.method === "GET") {
       if (url.pathname === "/api/public/v1/prospect_demo_assets") {
         json(200, { logo: true, background: true, font: false });
@@ -114,7 +120,7 @@ export async function startMockApi() {
           !url.searchParams.has(key) || url.searchParams.get(key) === job[key]
         ) && (url.searchParams.get("remote") !== "true" || job.remote)
       );
-      json(200, { data, pagination: { current_page: 1, total_pages: 1, total_count: data.length, per_page: 20 } });
+      json(200, { data: preview ? data.map((job) => ({ ...job, published_at: null, url: null, apply_url: null })) : data, pagination: { current_page: 1, total_pages: 1, total_count: data.length, per_page: 20 } });
       return;
     }
     if (request.method === "GET" && url.pathname === "/api/public/v1/talent_pool") {

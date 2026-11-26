@@ -31,12 +31,11 @@ async function generatePublishedStaticParams() {
   }
 }
 
-// An empty generateStaticParams result enables static fallback rendering. Preview
-// routes require a fresh request so Next can read the session cookie.
+// Omit the static fallback in preview so every request checks the current demo key.
 export const generateStaticParams = previewMode ? undefined : generatePublishedStaticParams;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  if (previewMode) return { title: "Private careers preview", robots: { index: false, follow: false } };
+  if (previewMode) return { title: "Careers demo preview", robots: { index: false, follow: false } };
   const { token } = await params;
   const job = await fetchJob(token);
   // The loading.tsx streaming boundary commits a 200 before the API responds,
